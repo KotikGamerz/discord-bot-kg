@@ -60,7 +60,10 @@ bot = commands.InteractionBot(intents=intents)
 
 @bot.event
 async def on_ready():
+    await bot.sync_commands()
     print(f"✅ Бот в сети как {bot.user}")
+    print("✅ Slash-команды синхронизированы")
+
 
 
 @bot.slash_command(description="Проверка задержки")
@@ -464,6 +467,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
