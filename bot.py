@@ -8,6 +8,34 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=Path('.') / '.env')
 from flask import Flask
 from threading import Thread
+import datetime
+
+def create_stock_embed(seeds, gear, eggs):
+    now = datetime.datetime.utcnow().strftime("%H:%M UTC")
+
+    embed = disnake.Embed(
+        title=f"🌱 Сток Grow A Garden — {now}",
+        color=disnake.Color.green()
+    )
+
+    embed.add_field(
+        name="🌱 Seeds",
+        value="\n".join(seeds) if seeds else "Пусто",
+        inline=True
+    )
+    embed.add_field(
+        name="🛠 Gear",
+        value="\n".join(gear) if gear else "Пусто",
+        inline=True
+    )
+    embed.add_field(
+        name="🥚 Eggs",
+        value="\n".join(eggs) if eggs else "Пусто",
+        inline=True
+    )
+
+    return embed
+
 
 app = Flask('')
 
@@ -412,6 +440,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
