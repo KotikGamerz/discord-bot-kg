@@ -10,6 +10,20 @@ from flask import Flask
 from threading import Thread
 import datetime
 
+async def fetch_stock():
+    url = "https://ТВОЯ-ССЫЛКА.onrender.com/stock"  # ← ВСТАВЬ свою ссылку
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    print("❌ API вернул ошибку:", resp.status)
+                    return None
+                return await resp.json()
+    except Exception as e:
+        print("❌ Ошибка получения стока:", e)
+        return None
+
 def create_stock_embed(seeds, gear, eggs):
     timestamp = int(datetime.datetime.utcnow().timestamp())  # ✅ с отступом
 
@@ -72,27 +86,21 @@ async def ping(inter):
     await inter.response.send_message(f"Бот онлайн и ответил с задержкой в {latency}мс")
 
 
-@bot.slash_command(name="stock", description="Показать сток Grow A Garden (тестовый)")
+@bot.slash_command(name="stock", description="Показать реальный сток Grow A Garden")
 async def stock(inter: disnake.ApplicationCommandInteraction):
-    test_seeds = [
-        "🍉 Watermelon x5",
-        "🌼 Daffodil x7",
-        "🍅 Tomato x1",
-        "🫐 Blueberry x2",
-    ]
+    await inter.response.defer()
 
-    test_gear = [
-        "💧 Basic Sprinkler x3",
-        "🔧 Wrench x1"
-    ]
+    data = await fetch_stock()
+    if not data:
+        await inter.followup.send("❌ Не удалось получить данные стока.", ephemeral=True)
+        return
 
-    test_eggs = [
-        "🥚 Uncommon Egg x1",
-        "🥚 Rare Egg x1"
-    ]
+    seeds = data.get("seeds", [])
+    gear = data.get("gear", [])
+    eggs = data.get("eggs", [])
 
-    embed = create_stock_embed(test_seeds, test_gear, test_eggs)
-    await inter.response.send_message(embed=embed)
+    embed = create_stock_embed(seeds, gear, eggs)
+    await inter.followup.send(embed=embed)
 
 
 @bot.slash_command(description="Информация о пользователе")
@@ -467,6 +475,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
