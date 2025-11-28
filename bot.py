@@ -19,18 +19,18 @@ def create_stock_embed(seeds, gear, eggs):
     )
 
     embed.add_field(
-        name="🌱 Seeds",
+        name="🌱 Семена",
         value="\n".join(seeds) if seeds else "Пусто",
         inline=True
     )
     embed.add_field(
-        name="🛠 Gear",
+        name="🛠 Инструменты",
         value="\n".join(gear) if gear else "Пусто",
         inline=True
     )
     embed.add_field(
-        name="🥚 Eggs",
-        value="\n".join(eggs) if eggs else "Пусто",
+        name="🥚 Яйца",
+        value="\n".join(eggs) if eggs else "Сток не изменился",
         inline=True
     )
 
@@ -467,6 +467,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
