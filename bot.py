@@ -69,6 +69,29 @@ async def ping(inter):
     await inter.response.send_message(f"Бот онлайн и ответил с задержкой в {latency}мс")
 
 
+@bot.slash_command(name="stock", description="Показать сток Grow A Garden (тестовый)")
+async def stock(inter: disnake.ApplicationCommandInteraction):
+    test_seeds = [
+        "🍉 Watermelon x5",
+        "🌼 Daffodil x7",
+        "🍅 Tomato x1",
+        "🫐 Blueberry x2",
+    ]
+
+    test_gear = [
+        "💧 Basic Sprinkler x3",
+        "🔧 Wrench x1"
+    ]
+
+    test_eggs = [
+        "🥚 Uncommon Egg x1",
+        "🥚 Rare Egg x1"
+    ]
+
+    embed = create_stock_embed(test_seeds, test_gear, test_eggs)
+    await inter.response.send_message(embed=embed)
+
+
 @bot.slash_command(description="Информация о пользователе")
 async def userinfo(inter, user: disnake.User = None):
     member = user or inter.author
@@ -80,6 +103,7 @@ async def userinfo(inter, user: disnake.User = None):
     embed.add_field(name="Имя", value=member.name)
     embed.add_field(name="ID", value=member.id)
     await inter.response.send_message(embed=embed)
+
 
 
 @bot.slash_command(description="Показать список команд")
@@ -440,6 +464,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
