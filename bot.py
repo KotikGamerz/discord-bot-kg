@@ -11,13 +11,12 @@ from threading import Thread
 import datetime
 
 def create_stock_embed(seeds, gear, eggs):
-timestamp = int(datetime.datetime.utcnow().timestamp())
+    timestamp = int(datetime.datetime.utcnow().timestamp())  # ✅ с отступом
 
-    
     embed = disnake.Embed(
-    title=f"🌱 Сток Grow A Garden — <t:{timestamp}:t>",
-    color=disnake.Color.green()
-)
+        title=f"🌱 Сток Grow A Garden — <t:{timestamp}:t>",
+        color=disnake.Color.green()
+    )
 
     embed.add_field(
         name="🌱 Seeds",
@@ -468,6 +467,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 keep_alive()
 
 bot.run(TOKEN)
+
 
 
 
