@@ -6,8 +6,21 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Path('.') / '.env')
+from flask import Flask
+from threading import Thread
 
+app = Flask('')
 
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_web():
+    app.run(host='0.0.0.0', port=3000)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
 
 OWNER_ID = 1167514315864162395  
 
@@ -396,6 +409,9 @@ async def croles(
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+keep_alive()
+
 bot.run(TOKEN)
+
 
 
