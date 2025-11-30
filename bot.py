@@ -133,6 +133,33 @@ async def ping(inter):
     latency = int(bot.latency * 1000)
     await inter.response.send_message(f"Бот онлайн и ответил с задержкой в {latency}мс")
 
+@bot.slash_command(
+    name="stock_setchannel",
+    description="Установить канал для автообновления стока (только владелец)"
+)
+async def stock_setchannel(
+    inter: disnake.ApplicationCommandInteraction,
+    channel: disnake.TextChannel
+):
+    global STOCK_CHANNEL_ID
+
+    # проверяем владельца
+    if inter.user.id != OWNER_ID:
+        await inter.response.send_message(
+            "❌ Только владелец бота может настраивать автосток.",
+            ephemeral=True
+        )
+        return
+
+    STOCK_CHANNEL_ID = channel.id
+
+    await inter.response.send_message(
+        f"✅ Канал для автообновления стока установлен: {channel.mention}",
+        ephemeral=True
+    )
+
+    print(f"📌 Новый канал автостока: {channel.id}")
+
 @bot.slash_command(name="stock", description="Показать реальный сток Grow A Garden")
 async def stock(inter: disnake.ApplicationCommandInteraction):
     await inter.response.defer()
@@ -402,6 +429,7 @@ async def croles(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
