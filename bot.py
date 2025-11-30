@@ -176,6 +176,88 @@ async def stock(inter: disnake.ApplicationCommandInteraction):
     embed = create_stock_embed(seeds, gear, eggs)
     await inter.followup.send(embed=embed)
 
+from disnake.ext import tasks
+
+# ==============================
+#   Фоновые задачи
+# ==============================
+
+@tasks.loop(minutes=5)
+async def stock_loop():
+    if not STOCK_ENABLED:
+        return
+
+    await auto_stock_update()
+
+
+@tasks.loop(minutes=30)
+async def egg_loop():
+    if not STOCK_ENABLED:
+        return
+
+    await auto_stock_update()
+
+
+# ==============================
+#   Команда включения стока
+# ==============================
+@bot.slash_command(
+    name="stock_enable",
+    description="Включить автообновление стока (только владелец)"
+)
+async def stock_enable(inter: disnake.ApplicationCommandInteraction):
+    global STOCK_ENABLED
+
+    if inter.user.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    if not STOCK_CHANNEL_ID:
+        await inter.response.send_message(
+            "⚠️ Сначала установи канал через `/stock_setchannel`.",
+            ephemeral=True
+        )
+        return
+
+    STOCK_ENABLED = True
+
+    # Запускаем задачи, если они не запущены
+    if not stock_loop.is_running():
+        stock_loop.start()
+
+    if not egg_loop.is_running():
+        egg_loop.start()
+
+    await inter.response.send_message(
+        f"✅ Автообновление стока включено!\n"
+        f"• Основной сток — каждые **5 минут**\n"
+        f"• Яйца — каждые **30 минут**",
+        ephemeral=True
+    )
+
+
+# ==============================
+#   Команда отключения стока
+# ==============================
+@bot.slash_command(
+    name="stock_disable",
+    description="Отключить автообновление стока (только владелец)"
+)
+async def stock_disable(inter: disnake.ApplicationCommandInteraction):
+    global STOCK_ENABLED
+
+    if inter.user.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    STOCK_ENABLED = False
+
+    await inter.response.send_message(
+        "⛔ Автообновление стока выключено.",
+        ephemeral=True
+    )
+
+
 @bot.slash_command(description="Информация о пользователе")
 async def userinfo(inter, user: disnake.User = None):
     member = user or inter.author
@@ -429,6 +511,7 @@ async def croles(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
