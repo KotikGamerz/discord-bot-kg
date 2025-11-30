@@ -331,15 +331,56 @@ class RoleDeleteConfirm(View):
         await inter.response.defer(ephemeral=True)
         await inter.followup.send("❌ Удаление отменено.", ephemeral=True)
 
-@bot.slash_command(name="croles", description="Удалить выбранные роли")
-async def croles(inter, **kwargs):
+@bot.slash_command(
+    name="croles",
+    description="Удаление выбранных ролей с подтверждением"
+)
+async def croles(
+    inter: disnake.ApplicationCommandInteraction,
+    role1:  disnake.Role = commands.Param(default=None),
+    role2:  disnake.Role = commands.Param(default=None),
+    role3:  disnake.Role = commands.Param(default=None),
+    role4:  disnake.Role = commands.Param(default=None),
+    role5:  disnake.Role = commands.Param(default=None),
+    role6:  disnake.Role = commands.Param(default=None),
+    role7:  disnake.Role = commands.Param(default=None),
+    role8:  disnake.Role = commands.Param(default=None),
+    role9:  disnake.Role = commands.Param(default=None),
+    role10: disnake.Role = commands.Param(default=None),
+    role11: disnake.Role = commands.Param(default=None),
+    role12: disnake.Role = commands.Param(default=None),
+    role13: disnake.Role = commands.Param(default=None),
+    role14: disnake.Role = commands.Param(default=None),
+    role15: disnake.Role = commands.Param(default=None),
+    role16: disnake.Role = commands.Param(default=None),
+    role17: disnake.Role = commands.Param(default=None),
+    role18: disnake.Role = commands.Param(default=None),
+    role19: disnake.Role = commands.Param(default=None),
+    role20: disnake.Role = commands.Param(default=None),
+    role21: disnake.Role = commands.Param(default=None),
+    role22: disnake.Role = commands.Param(default=None),
+    role23: disnake.Role = commands.Param(default=None),
+    role24: disnake.Role = commands.Param(default=None),
+    role25: disnake.Role = commands.Param(default=None),
+):
     if inter.user.id != OWNER_ID:
         await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
         return
 
     await inter.response.defer(ephemeral=True)
 
-    roles_to_delete = [r for r in kwargs.values() if isinstance(r, disnake.Role)]
+    input_roles = [
+        role1, role2, role3, role4, role5,
+        role6, role7, role8, role9, role10,
+        role11, role12, role13, role14, role15,
+        role16, role17, role18, role19, role20,
+        role21, role22, role23, role24, role25,
+    ]
+
+    roles_to_delete = [
+        r for r in input_roles
+        if isinstance(r, disnake.Role)
+    ]
 
     if not roles_to_delete:
         await inter.followup.send("❌ Ты не выбрал ни одной роли.", ephemeral=True)
@@ -354,12 +395,14 @@ async def croles(inter, **kwargs):
         ephemeral=True
     )
 
+
 # ===============================
 # ЗАПУСК
 # ===============================
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
