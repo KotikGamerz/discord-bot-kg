@@ -198,34 +198,54 @@ async def ping(inter):
 # 🧩 КОМАНДА /stick
 # =======================================
 
+last_sticky_message_id = None  # хранит ID последнего закреплённого сообщения
+last_sticky_channel_id = None  # в каком канале делался /stick
+
+
 @bot.slash_command(
     name="stick",
-    description="Создать / обновить рекламное сообщение в канале (только владелец)"
+    description="Закрепить сообщение-баннер (удаляет старое и оставляет новое)"
 )
 async def stick(
     inter: disnake.ApplicationCommandInteraction,
-    message: str,
-    embed_name: str,
-    embed: str,
-    color: str = "#5865F2"
+    title: str,
+    text: str
 ):
+    global last_sticky_message_id, last_sticky_channel_id
+
+    # Только владелец
     if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Только владелец.", ephemeral=True)
+        await inter.response.send_message("❌ Только владелец может использовать /stick.", ephemeral=True)
         return
 
     await inter.response.defer(ephemeral=True)
 
-    cfg = {
-        "text": message,
-        "embed_title": embed_name,
-        "embed_text": embed,
-        "embed_color": color,
-        "channel_id": inter.channel.id
-    }
+    channel = inter.channel
 
-    await send_sticky_in_channel(inter.channel, cfg)
+    # Удаляем старое sticky, если оно было в этом же канале
+    if last_sticky_message_id and last_sticky_channel_id == channel.id:
+        try:
+            old_msg = await channel.fetch_message(last_sticky_message_id)
+            await old_msg.delete()
+        except:
+            pass  # старое сообщение не найдено — игнорируем
 
-    await inter.followup.send("✅ Рекламка закреплена и будет автоматически переноситься вниз!", ephemeral=True)
+    # Создаём новый embed
+    embed = disnake.Embed(
+        title=title,
+        description=text,
+        color=disnake.Color.green()
+    )
+
+    # Отправляем новый sticky
+    new_msg = await channel.send(embed=embed)
+
+    # Сохраняем ID
+    last_sticky_message_id = new_msg.id
+    last_sticky_channel_id = channel.id
+
+    await inter.followup.send("✅ Sticky обновлён!", ephemeral=True)
+
 
 # =======================================
 # 🧩 ВСЕ ТВОИ ПРОШЛЫЕ КОМАНДЫ
@@ -307,6 +327,7 @@ async def fox(inter):
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
