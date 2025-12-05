@@ -1,5 +1,5 @@
 import disnake
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 from disnake.ui import View, Button
 import random
 import aiohttp
@@ -11,23 +11,28 @@ import json
 from flask import Flask
 from threading import Thread
 
-# ===============================
-# ЗАГРУЗКА .ENV
-# ===============================
-
+# =======================================
+# 🔧 ЗАГРУЗКА .ENV
+# =======================================
 load_dotenv(dotenv_path=Path('.') / '.env')
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# ===============================
-# ОСНОВНЫЕ КОНСТАНТЫ
-# ===============================
-
-OWNER_ID = 1167514315864162395  # твой ID
+# =======================================
+# ⚙ ОСНОВНЫЕ КОНСТАНТЫ
+# =======================================
+OWNER_ID = 1167514315864162395  
 CONFIG_PATH = "stock_config.json"
+STICK_CONFIG_PATH = "stick_config.json"
 
-# ===============================
-# РАБОТА С КОНФИГОМ
-# ===============================
+STOCK_ENABLED = False
+STOCK_CHANNEL_ID = None
+
+# ключевая фраза по которой ловим сток-бота
+STOCK_TRIGGER_TEXT = "Grow A Garden Stock"
+
+# =======================================
+# 📁 РАБОТА С КОНФИГОМ для stock
+# =======================================
 
 def load_config():
     try:
@@ -40,477 +45,269 @@ def save_config(cfg):
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=4, ensure_ascii=False)
 
-# ===============================
-# API ДЛЯ STOСK
-# ===============================
+# =======================================
+# 📁 РАБОТА С КОНФИГОМ для STICK
+# =======================================
 
-async def fetch_stock():
-    url = "https://ТВОЯ-ССЫЛКА.onrender.com/stock"  # ← ВСТАВЬ свою ссылку
-
+def load_stick_config():
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    print("❌ API вернул ошибку:", resp.status)
-                    return None
-                return await resp.json()
-    except Exception as e:
-        print("❌ Ошибка получения стока:", e)
+        with open(STICK_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
         return None
 
-# ===============================
-# СБОРКА EMBED ДЛЯ СТОКА
-# ===============================
+def save_stick_config(cfg: dict):
+    with open(STICK_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=4, ensure_ascii=False)
 
-def create_stock_embed(seeds, gear, eggs):
-    timestamp = int(datetime.datetime.utcnow().timestamp())
+# =======================================
+# 🔁 ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: отправка sticky-рекламки
+# =======================================
+
+async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
+    old_id = cfg.get("message_id")
+
+    # Удаляем старое закреп-сообщение
+    if old_id:
+        try:
+            msg = await channel.fetch_message(old_id)
+            await msg.delete()
+        except:
+            pass  # нет доступа или сообщение удалено
+
+    # Цвет эмбеда
+    try:
+        ecolor = int(cfg.get("embed_color", "#5865F2").replace("#", ""), 16)
+    except:
+        ecolor = 0x5865F2
 
     embed = disnake.Embed(
-        title=f"🌱 Сток Grow A Garden — <t:{timestamp}:t>",
-        color=disnake.Color.green()
+        title=cfg.get("embed_title", "Магазин"),
+        description=cfg.get("embed_text", ""),
+        color=ecolor
     )
 
-    embed.add_field(
-        name="🌱 Семена",
-        value="\n".join(seeds) if seeds else "Пусто",
-        inline=True
-    )
-    embed.add_field(
-        name="🛠 Инструменты",
-        value="\n".join(gear) if gear else "Пусто",
-        inline=True
-    )
-    embed.add_field(
-        name="🥚 Яйца",
-        value="\n".join(eggs) if eggs else "Сток не изменился",
-        inline=True
+    # Отправляем новое сообщение
+    new_msg = await channel.send(
+        content=cfg.get("text", ""),
+        embed=embed
     )
 
-    return embed
+    cfg["message_id"] = new_msg.id
+    cfg["channel_id"] = channel.id
+    save_stick_config(cfg)
 
-# ===============================
-# FLASK SERVER (KEEP ALIVE)
-# ===============================
+    return new_msg
+
+# =======================================
+# 🌐 ДЕРЖИМ БОТА ЖИВЫМ (RENDER KEEP-ALIVE)
+# =======================================
 
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot is alive!"
+    return "Bot alive"
 
 def run_web():
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host="0.0.0.0", port=3000)
 
 def keep_alive():
-    t = Thread(target=run_web)
-    t.start()
+    Thread(target=run_web).start()
 
-# ===============================
-# СОЗДАНИЕ БОТА
-# ===============================
+# =======================================
+# 🤖 СОЗДАНИЕ БОТА
+# =======================================
 
 intents = disnake.Intents.default()
 intents.members = True
 
 bot = commands.InteractionBot(intents=intents)
 
-# ===============================
-# СОБЫТИЕ on_ready
-# ===============================
+# =======================================
+# 🔔 СОБЫТИЕ on_ready
+# =======================================
 
 @bot.event
 async def on_ready():
     await bot.sync_commands()
-    print(f"✅ Бот в сети как {bot.user}")
-    print("✅ Slash-команды синхронизированы")
+    print(f"✅ Бот онлайн как {bot.user}")
 
-# ===============================
-# КОМАНДЫ
-# ===============================
+# =======================================
+# 📨 ЛОВИМ СООБЩЕНИЕ СТОКА → переносим рекламку вниз
+# =======================================
+
+@bot.event
+async def on_message(message: disnake.Message):
+
+    # игнорируем самого бота
+    if message.author.id == bot.user.id:
+        return
+
+    cfg = load_stick_config()
+    if not cfg:
+        return  # sticky не настроен
+
+    if message.channel.id != cfg.get("channel_id"):
+        return  # чужой канал
+
+    # проверяем — это сток?
+    if STOCK_TRIGGER_TEXT not in message.content:
+        return
+
+    # переносим рекламку вниз
+    await send_sticky_in_channel(message.channel, cfg)
+
+# =======================================
+# 📡 STOCK API (пока не используем, но оставляем)
+# =======================================
+
+async def fetch_stock():
+    url = "https://gag-stock-api.onrender.com/stock"
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(url) as r:
+                if r.status != 200:
+                    return None
+                return await r.json()
+    except:
+        return None
+
+def create_stock_embed(seeds, gear, eggs):
+    t = int(datetime.datetime.utcnow().timestamp())
+    e = disnake.Embed(
+        title=f"🌱 Сток Grow A Garden — <t:{t}:t>",
+        color=disnake.Color.green()
+    )
+
+    e.add_field(name="🌱 Семена", value="\n".join(seeds) if seeds else "Пусто")
+    e.add_field(name="🛠 Инструменты", value="\n".join(gear) if gear else "Пусто")
+    e.add_field(name="🥚 Яйца", value="\n".join(eggs) if eggs else "Пусто")
+
+    return e
+
+# =======================================
+# 🧩 КОМАНДА /ping
+# =======================================
 
 @bot.slash_command(description="Проверка задержки")
 async def ping(inter):
-    latency = int(bot.latency * 1000)
-    await inter.response.send_message(f"Бот онлайн и ответил с задержкой в {latency}мс")
+    await inter.response.send_message(f"{int(bot.latency * 1000)}мс")
+
+# =======================================
+# 🧩 КОМАНДА /stick
+# =======================================
 
 @bot.slash_command(
-    name="stock_setchannel",
-    description="Установить канал для автообновления стока (только владелец)"
+    name="stick",
+    description="Создать / обновить рекламное сообщение в канале (только владелец)"
 )
-async def stock_setchannel(
+async def stick(
     inter: disnake.ApplicationCommandInteraction,
-    channel: disnake.TextChannel
+    message: str,
+    embed_name: str,
+    embed: str,
+    color: str = "#5865F2"
 ):
-    global STOCK_CHANNEL_ID
-
-    # проверяем владельца
     if inter.user.id != OWNER_ID:
-        await inter.response.send_message(
-            "❌ Только владелец бота может настраивать автосток.",
-            ephemeral=True
-        )
+        await inter.response.send_message("❌ Только владелец.", ephemeral=True)
         return
 
-    STOCK_CHANNEL_ID = channel.id
+    await inter.response.defer(ephemeral=True)
 
-    await inter.response.send_message(
-        f"✅ Канал для автообновления стока установлен: {channel.mention}",
-        ephemeral=True
-    )
+    cfg = {
+        "text": message,
+        "embed_title": embed_name,
+        "embed_text": embed,
+        "embed_color": color,
+        "channel_id": inter.channel.id
+    }
 
-    print(f"📌 Новый канал автостока: {channel.id}")
+    await send_sticky_in_channel(inter.channel, cfg)
+
+    await inter.followup.send("✅ Рекламка закреплена и будет автоматически переноситься вниз!", ephemeral=True)
+
+# =======================================
+# 🧩 ВСЕ ТВОИ ПРОШЛЫЕ КОМАНДЫ
+# =======================================
 
 @bot.slash_command(name="stock", description="Показать реальный сток Grow A Garden")
-async def stock(inter: disnake.ApplicationCommandInteraction):
+async def stock(inter):
     await inter.response.defer()
-
     data = await fetch_stock()
     if not data:
-        await inter.followup.send("❌ Не удалось получить данные стока.", ephemeral=True)
+        await inter.followup.send("❌ Не удалось получить сток.", ephemeral=True)
         return
 
-    seeds = data.get("seeds", [])
-    gear = data.get("gear", [])
-    eggs = data.get("eggs", [])
-
-    embed = create_stock_embed(seeds, gear, eggs)
-    await inter.followup.send(embed=embed)
-
-from disnake.ext import tasks
-
-# ==============================
-#   Фоновые задачи
-# ==============================
-
-@tasks.loop(minutes=5)
-async def stock_loop():
-    if not STOCK_ENABLED:
-        return
-
-    await auto_stock_update()
-
-
-@tasks.loop(minutes=30)
-async def egg_loop():
-    if not STOCK_ENABLED:
-        return
-
-    await auto_stock_update()
-
-
-# ==============================
-#   Команда включения стока
-# ==============================
-@bot.slash_command(
-    name="stock_enable",
-    description="Включить автообновление стока (только владелец)"
-)
-async def stock_enable(inter: disnake.ApplicationCommandInteraction):
-    global STOCK_ENABLED
-
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
-        return
-
-    if not STOCK_CHANNEL_ID:
-        await inter.response.send_message(
-            "⚠️ Сначала установи канал через `/stock_setchannel`.",
-            ephemeral=True
-        )
-        return
-
-    STOCK_ENABLED = True
-
-    # Запускаем задачи, если они не запущены
-    if not stock_loop.is_running():
-        stock_loop.start()
-
-    if not egg_loop.is_running():
-        egg_loop.start()
-
-    await inter.response.send_message(
-        f"✅ Автообновление стока включено!\n"
-        f"• Основной сток — каждые **5 минут**\n"
-        f"• Яйца — каждые **30 минут**",
-        ephemeral=True
-    )
-
-
-# ==============================
-#   Команда отключения стока
-# ==============================
-@bot.slash_command(
-    name="stock_disable",
-    description="Отключить автообновление стока (только владелец)"
-)
-async def stock_disable(inter: disnake.ApplicationCommandInteraction):
-    global STOCK_ENABLED
-
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
-        return
-
-    STOCK_ENABLED = False
-
-    await inter.response.send_message(
-        "⛔ Автообновление стока выключено.",
-        ephemeral=True
-    )
-
+    e = create_stock_embed(data["seeds"], data["gear"], data["eggs"])
+    await inter.followup.send(embed=e)
 
 @bot.slash_command(description="Информация о пользователе")
 async def userinfo(inter, user: disnake.User = None):
-    member = user or inter.author
-    embed = disnake.Embed(
-        title="Информация",
-        color=0x00ffcc
-    )
-    embed.set_thumbnail(url=member.display_avatar.url)
-    embed.add_field(name="Имя", value=member.name)
-    embed.add_field(name="ID", value=member.id)
-    await inter.response.send_message(embed=embed)
-
-@bot.slash_command(description="Показать список команд")
-async def help(inter):
-    msg = (
-        "**Доступные команды:**\n"
-        "/ping — задержка\n"
-        "/userinfo — информация о пользователе\n"
-        "/coinflip — монетка\n"
-        "/roll — число 1–100\n"
-        "/meme — мем\n"
-        "/cat — котик\n"
-        "/dog — собачка\n"
-        "/hamster — хомячок\n"
-        "/fox — лиса\n"
-        "/penguin — пингвин\n"
-        "/say — сказать от лица бота\n"
-        "/embed — создать embed\n"
-    )
-    await inter.response.send_message(msg, ephemeral=True)
+    m = user or inter.author
+    e = disnake.Embed(title="Информация", color=0x00ffcc)
+    e.set_thumbnail(url=m.display_avatar.url)
+    e.add_field(name="Имя", value=m.name)
+    e.add_field(name="ID", value=m.id)
+    await inter.response.send_message(embed=e)
 
 @bot.slash_command(description="Подбросить монетку")
 async def coinflip(inter):
-    await inter.response.send_message(random.choice(["Орёл 🦅", "Решка 💰"]))
+    await inter.response.send_message(random.choice(["Орёл", "Решка"]))
 
 @bot.slash_command(description="Случайное число 1–100")
 async def roll(inter):
-    await inter.response.send_message(f"🎯 {random.randint(1, 100)}")
+    await inter.response.send_message(f"{random.randint(1, 100)}")
 
-@bot.slash_command(description="Случайный мем")
+@bot.slash_command(description="Отправить случайный мем")
 async def meme(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://meme-api.com/gimme") as resp:
-            data = await resp.json()
-            embed = disnake.Embed(title=data["title"])
-            embed.set_image(url=data["url"])
-            await inter.response.send_message(embed=embed)
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://meme-api.com/gimme") as r:
+            d = await r.json()
+            e = disnake.Embed(title=d["title"])
+            e.set_image(url=d["url"])
+            await inter.response.send_message(embed=e)
 
-@bot.slash_command(description="Прислать случайного котика 😺")
+@bot.slash_command(description="Отправить случайного котика")
 async def cat(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://api.thecatapi.com/v1/images/search") as resp:
-            data = await resp.json()
-            await inter.response.send_message(data[0]["url"])
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://api.thecatapi.com/v1/images/search") as r:
+            d = await r.json()
+            await inter.response.send_message(d[0]["url"])
 
-@bot.slash_command(name="dog", description="Прислать случайную собачку 🐶")
+@bot.slash_command(description="Отправить случайную собачку")
 async def dog(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://dog.ceo/api/breeds/image/random") as resp:
-            data = await resp.json()
-            await inter.response.send_message(data.get("message"))
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://dog.ceo/api/breeds/image/random") as r:
+            d = await r.json()
+            await inter.response.send_message(d["message"])
 
-@bot.slash_command(name="hamster", description="Картинка хомячка 🐹")
+@bot.slash_command(description="Отправить случайного хомячка")
 async def hamster(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
+    async with aiohttp.ClientSession() as s:
+        async with s.get(
             "https://api.night-api.com/images/animals/hamster",
             headers={"authorization": "wjeHiPP0rd-wXiN99rkH5iGKPqJBweF-2SoiKnAcZ8"}
-        ) as resp:
-            data = await resp.json()
-            img = data.get("content", {}).get("url")
-            await inter.response.send_message(img or "❌ Не удалось получить хомячка.")
+        ) as r:
+            d = await r.json()
+            img = d.get("content", {}).get("url")
+            await inter.response.send_message(img or "❌ Ошибка API.")
 
-@bot.slash_command(name="fox", description="Картинка лисы 🦊")
+@bot.slash_command(description="Отправить случайную лису")
 async def fox(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://randomfox.ca/floof/") as resp:
-            data = await resp.json()
-            await inter.response.send_message(data.get("image"))
-
-@bot.slash_command(name="penguin", description="Картинка пингвина 🐧")
-async def penguin(inter):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://source.unsplash.com/random/800x600/?penguin") as resp:
-            await inter.response.send_message(str(resp.url))
-
-# ===============================
-# SAY
-# ===============================
-
-@bot.slash_command(name="say", description="Отправить сообщение от бота (только владелец)")
-async def say(inter, message: str):
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Только владелец.", ephemeral=True)
-        return
-
-    await inter.response.defer(ephemeral=True)
-    await inter.channel.send(message)
-    await inter.followup.send("✅ Сообщение отправлено!", ephemeral=True)
-
-# ===============================
-# EMBED
-# ===============================
-
-@bot.slash_command(name="embed", description="Создать embed (только владелец)")
-async def embed_command(inter, title: str, text: str, color: str = "#5865F2"):
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Только владелец.", ephemeral=True)
-        return
-
-    await inter.response.defer(ephemeral=True)
-
-    try:
-        embed_color = int(color.replace("#", ""), 16)
-    except:
-        embed_color = 0x5865F2
-
-    embed = disnake.Embed(title=title, description=text, color=embed_color)
-    await inter.channel.send(embed=embed)
-    await inter.followup.send(f"✅ Embed отправлен!", ephemeral=True)
-
-# ===============================
-# COMBINED
-# ===============================
-
-@bot.slash_command(name="combined", description="Текст + embed (только владелец)")
-async def combined(inter, realtext: str, title: str, embed: str, embedcolor: str = "#5865F2"):
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Только владелец.", ephemeral=True)
-        return
-
-    await inter.response.defer(ephemeral=True)
-
-    try:
-        embed_color = int(embedcolor.replace("#", ""), 16)
-    except:
-        embed_color = 0x5865F2
-
-    em = disnake.Embed(title=title, description=embed, color=embed_color)
-    await inter.channel.send(content=realtext, embed=em)
-
-# ===============================
-# МЕНЮ УДАЛЕНИЯ РОЛЕЙ
-# ===============================
-
-class RoleDeleteConfirm(View):
-    def __init__(self, roles_to_delete):
-        super().__init__(timeout=60)
-        self.roles_to_delete = roles_to_delete
-
-    @disnake.ui.button(label="✅ Продолжить", style=disnake.ButtonStyle.danger)
-    async def confirm(self, button: Button, inter: disnake.MessageInteraction):
-        if inter.user.id != OWNER_ID:
-            await inter.response.send_message("❌ Это не твоя кнопка.", ephemeral=True)
-            return
-
-        await inter.response.defer(ephemeral=True)
-
-        deleted = 0
-        skipped = 0
-
-        for role in self.roles_to_delete:
-            try:
-                await role.delete()
-                deleted += 1
-            except:
-                skipped += 1
-
-        await inter.followup.send(
-            content=f"✅ Готово!\nУдалено: {deleted}\nПропущено: {skipped}",
-            ephemeral=True
-        )
-
-    @disnake.ui.button(label="❌ Отмена", style=disnake.ButtonStyle.secondary)
-    async def cancel(self, button: Button, inter: disnake.MessageInteraction):
-        if inter.user.id != OWNER_ID:
-            await inter.response.send_message("❌ Это не твоя кнопка.", ephemeral=True)
-            return
-
-        await inter.response.defer(ephemeral=True)
-        await inter.followup.send("❌ Удаление отменено.", ephemeral=True)
-
-@bot.slash_command(
-    name="croles",
-    description="Удаление выбранных ролей с подтверждением"
-)
-async def croles(
-    inter: disnake.ApplicationCommandInteraction,
-    role1:  disnake.Role = commands.Param(default=None),
-    role2:  disnake.Role = commands.Param(default=None),
-    role3:  disnake.Role = commands.Param(default=None),
-    role4:  disnake.Role = commands.Param(default=None),
-    role5:  disnake.Role = commands.Param(default=None),
-    role6:  disnake.Role = commands.Param(default=None),
-    role7:  disnake.Role = commands.Param(default=None),
-    role8:  disnake.Role = commands.Param(default=None),
-    role9:  disnake.Role = commands.Param(default=None),
-    role10: disnake.Role = commands.Param(default=None),
-    role11: disnake.Role = commands.Param(default=None),
-    role12: disnake.Role = commands.Param(default=None),
-    role13: disnake.Role = commands.Param(default=None),
-    role14: disnake.Role = commands.Param(default=None),
-    role15: disnake.Role = commands.Param(default=None),
-    role16: disnake.Role = commands.Param(default=None),
-    role17: disnake.Role = commands.Param(default=None),
-    role18: disnake.Role = commands.Param(default=None),
-    role19: disnake.Role = commands.Param(default=None),
-    role20: disnake.Role = commands.Param(default=None),
-    role21: disnake.Role = commands.Param(default=None),
-    role22: disnake.Role = commands.Param(default=None),
-    role23: disnake.Role = commands.Param(default=None),
-    role24: disnake.Role = commands.Param(default=None),
-    role25: disnake.Role = commands.Param(default=None),
-):
-    if inter.user.id != OWNER_ID:
-        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
-        return
-
-    await inter.response.defer(ephemeral=True)
-
-    input_roles = [
-        role1, role2, role3, role4, role5,
-        role6, role7, role8, role9, role10,
-        role11, role12, role13, role14, role15,
-        role16, role17, role18, role19, role20,
-        role21, role22, role23, role24, role25,
-    ]
-
-    roles_to_delete = [
-        r for r in input_roles
-        if isinstance(r, disnake.Role)
-    ]
-
-    if not roles_to_delete:
-        await inter.followup.send("❌ Ты не выбрал ни одной роли.", ephemeral=True)
-        return
-
-    preview = "\n".join(f"• {r.name}" for r in roles_to_delete)
-    view = RoleDeleteConfirm(roles_to_delete)
-
-    await inter.followup.send(
-        content=f"🗑 **Эти роли будут удалены:**\n{preview}\n\nВы уверены?",
-        view=view,
-        ephemeral=True
-    )
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://randomfox.ca/floof/") as r:
+            d = await r.json()
+            await inter.response.send_message(d["image"])
 
 
 # ===============================
-# ЗАПУСК
+# ▶ ЗАПУСК
 # ===============================
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
