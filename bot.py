@@ -264,7 +264,7 @@ async def stock(inter):
 
 @bot.slash_command(
     name="combined",
-    description="Отправить обычный текст + эмбед одним сообщением (только владелец)"
+    description="Отправить текст + эмбед без привязки к команде (только владелец)"
 )
 async def combined(
     inter: disnake.ApplicationCommandInteraction,
@@ -273,6 +273,7 @@ async def combined(
     embed: str,
     embedcolor: str
 ):
+    # 🔒 Проверка владельца
     if inter.author.id != OWNER_ID:
         await inter.response.send_message(
             "❌ У тебя нет доступа к этой команде.",
@@ -280,21 +281,18 @@ async def combined(
         )
         return
 
-    await inter.response.defer()
+    # ✅ СРАЗУ отвечаем на команду невидимо
+    await inter.response.send_message(
+        "✅ Отправлено",
+        ephemeral=True
+    )
 
+    # 🎨 HEX → color
     try:
-        # Убираем #
-        hex_color = embedcolor.lstrip("#")
-
-        # Преобразуем hex → int
-        color_value = int(hex_color, 16)
-
+        color_value = int(embedcolor.lstrip("#"), 16)
         color = disnake.Color(color_value)
     except ValueError:
-        await inter.followup.send(
-            "❌ Неверный HEX-код цвета. Пример: `#2ecc71`",
-            ephemeral=True
-        )
+        # если ошибка — просто не отправляем эмбед
         return
 
     emb = disnake.Embed(
@@ -303,7 +301,8 @@ async def combined(
         color=color
     )
 
-    await inter.followup.send(
+    # 📤 ОТПРАВЛЯЕМ СООБЩЕНИЕ УЖЕ ОТДЕЛЬНО ОТ КОМАНДЫ
+    await inter.channel.send(
         content=realtext,
         embed=emb
     )
@@ -373,6 +372,7 @@ async def fox(inter):
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
