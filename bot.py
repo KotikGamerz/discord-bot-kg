@@ -262,6 +262,52 @@ async def stock(inter):
     e = create_stock_embed(data["seeds"], data["gear"], data["eggs"])
     await inter.followup.send(embed=e)
 
+@bot.slash_command(
+    name="combined",
+    description="Отправить обычный текст + эмбед одним сообщением (только владелец)"
+)
+async def combined(
+    inter: disnake.ApplicationCommandInteraction,
+    realtext: str,
+    title: str,
+    embed: str,
+    embedcolor: str
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message(
+            "❌ У тебя нет доступа к этой команде.",
+            ephemeral=True
+        )
+        return
+
+    await inter.response.defer()
+
+    try:
+        # Убираем #
+        hex_color = embedcolor.lstrip("#")
+
+        # Преобразуем hex → int
+        color_value = int(hex_color, 16)
+
+        color = disnake.Color(color_value)
+    except ValueError:
+        await inter.followup.send(
+            "❌ Неверный HEX-код цвета. Пример: `#2ecc71`",
+            ephemeral=True
+        )
+        return
+
+    emb = disnake.Embed(
+        title=title,
+        description=embed,
+        color=color
+    )
+
+    await inter.followup.send(
+        content=realtext,
+        embed=emb
+    )
+
 @bot.slash_command(description="Информация о пользователе")
 async def userinfo(inter, user: disnake.User = None):
     m = user or inter.author
@@ -327,6 +373,7 @@ async def fox(inter):
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
