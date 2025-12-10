@@ -248,7 +248,7 @@ async def stick(
 
 
 # =======================================
-# 🧩 ВСЕ ТВОИ ПРОШЛЫЕ КОМАНДЫ
+# 🧩 ВСЕ ПРОШЛЫЕ КОМАНДЫ
 # =======================================
 
 @bot.slash_command(name="stock", description="Показать реальный сток Grow A Garden")
@@ -261,6 +261,54 @@ async def stock(inter):
 
     e = create_stock_embed(data["seeds"], data["gear"], data["eggs"])
     await inter.followup.send(embed=e)
+
+@bot.slash_command(
+    name="say",
+    description="Отправить сообщение от имени бота (только владелец)"
+)
+async def say(
+    inter: disnake.ApplicationCommandInteraction,
+    message: str
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    await inter.response.send_message("✅ Отправлено", ephemeral=True)
+    await inter.channel.send(message)
+
+@bot.slash_command(
+    name="embed",
+    description="Отправить эмбед (только владелец)"
+)
+async def embed_cmd(
+    inter: disnake.ApplicationCommandInteraction,
+    title: str,
+    text: str,
+    embedcolor: str = None
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    await inter.response.send_message("✅ Отправлено", ephemeral=True)
+
+    # Цвет
+    if embedcolor:
+        try:
+            color = disnake.Color(int(embedcolor.lstrip("#"), 16))
+        except ValueError:
+            color = disnake.Color.blurple()
+    else:
+        color = disnake.Color.blurple()
+
+    emb = disnake.Embed(
+        title=title,
+        description=text,
+        color=color
+    )
+
+    await inter.channel.send(embed=emb)
 
 @bot.slash_command(
     name="combined",
@@ -372,6 +420,7 @@ async def fox(inter):
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
