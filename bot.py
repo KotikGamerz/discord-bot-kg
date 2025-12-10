@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import datetime
+from datetime import datetime, timedelta
 import json
 from flask import Flask
 from threading import Thread
@@ -185,6 +186,42 @@ def create_stock_embed(seeds, gear, eggs):
     e.add_field(name="🥚 Яйца", value="\n".join(eggs) if eggs else "Пусто")
 
     return e
+
+# =======================================
+# ❗КЛАССЫ
+# =======================================
+
+class RoleDeleteConfirm(disnake.ui.View):
+    def __init__(self, roles: list[disnake.Role]):
+        super().__init__(timeout=60)
+        self.roles = roles
+
+    @disnake.ui.button(label="✅ Продолжить", style=disnake.ButtonStyle.danger)
+    async def confirm(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        if inter.author.id != OWNER_ID:
+            await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+            return
+
+        deleted = []
+        for role in self.roles:
+            try:
+                await role.delete(reason="Удалено через /croles")
+                deleted.append(role.name)
+            except Exception:
+                pass
+
+        await inter.response.edit_message(
+            content=f"🗑 **Удалено ролей:** {len(deleted)}",
+            view=None
+        )
+
+    @disnake.ui.button(label="❌ Отмена", style=disnake.ButtonStyle.secondary)
+    async def cancel(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        await inter.response.edit_message(
+            content="❌ Удаление отменено.",
+            view=None
+        )
+
 
 # =======================================
 # 🧩 КОМАНДА /ping
@@ -414,12 +451,150 @@ async def fox(inter):
             await inter.response.send_message(d["image"])
 
 
+@bot.slash_command(
+    name="croles",
+    description="Массово удалить роли (до 25, только владелец)"
+)
+async def croles(
+    inter: disnake.ApplicationCommandInteraction,
+
+    role1: disnake.Role = None,
+    role2: disnake.Role = None,
+    role3: disnake.Role = None,
+    role4: disnake.Role = None,
+    role5: disnake.Role = None,
+    role6: disnake.Role = None,
+    role7: disnake.Role = None,
+    role8: disnake.Role = None,
+    role9: disnake.Role = None,
+    role10: disnake.Role = None,
+
+    role11: disnake.Role = None,
+    role12: disnake.Role = None,
+    role13: disnake.Role = None,
+    role14: disnake.Role = None,
+    role15: disnake.Role = None,
+    role16: disnake.Role = None,
+    role17: disnake.Role = None,
+    role18: disnake.Role = None,
+    role19: disnake.Role = None,
+    role20: disnake.Role = None,
+
+    role21: disnake.Role = None,
+    role22: disnake.Role = None,
+    role23: disnake.Role = None,
+    role24: disnake.Role = None,
+    role25: disnake.Role = None,
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    roles = [
+        r for r in [
+            role1, role2, role3, role4, role5,
+            role6, role7, role8, role9, role10,
+            role11, role12, role13, role14, role15,
+            role16, role17, role18, role19, role20,
+            role21, role22, role23, role24, role25
+        ] if r
+    ]
+
+    if not roles:
+        await inter.response.send_message("❌ Роли не выбраны.", ephemeral=True)
+        return
+
+    preview = "\n".join(f"• {r.name}" for r in roles)
+    view = RoleDeleteConfirm(roles)
+
+    await inter.response.send_message(
+        content=f"🗑 **Эти роли будут удалены:**\n{preview}\n\nВы уверены?",
+        view=view,
+        ephemeral=True
+    )
+
+@bot.slash_command(
+    name="channels_purge",
+    description="Удалить сообщения в канале (до 14 дней)"
+)
+async def channels_purge(
+    inter: disnake.ApplicationCommandInteraction,
+    amount: int,
+    channel: disnake.TextChannel = None
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    if amount < 1 or amount > 1000:
+        await inter.response.send_message("❌ Количество должно быть от 1 до 1000.", ephemeral=True)
+        return
+
+    target_channel = channel or inter.channel
+
+    deleted = await target_channel.purge(limit=amount)
+
+    await inter.response.send_message(
+        f"🧹 Удалено сообщений: {len(deleted)}",
+        ephemeral=True
+    )
+
+@bot.slash_command(
+    name="inactive_check",
+    description="Найти неактивных участников (по дате входа)"
+)
+async def inactive_check(
+    inter: disnake.ApplicationCommandInteraction,
+    period: str = commands.Param(
+        choices=[
+            "1 неделя", "1 месяц", "3 месяца", "6 месяцев"
+        ]
+    )
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    now = datetime.utcnow()
+
+    delta_map = {
+        "1 неделя": timedelta(days=7),
+        "1 месяц": timedelta(days=30),
+        "3 месяца": timedelta(days=90),
+        "6 месяцев": timedelta(days=180)
+    }
+
+    cutoff = now - delta_map[period]
+
+    inactive = []
+    for member in inter.guild.members:
+        if member.bot:
+            continue
+        if member.joined_at and member.joined_at < cutoff:
+            inactive.append(member)
+
+    if not inactive:
+        await inter.response.send_message(
+            "✅ Неактивных участников не найдено.",
+            ephemeral=True
+        )
+        return
+
+    result = "\n".join(f"• {m} — с {m.joined_at.date()}" for m in inactive[:30])
+
+    await inter.response.send_message(
+        f"👤 **Потенциально неактивные ({period}):**\n{result}\n\n"
+        f"Всего: {len(inactive)}",
+        ephemeral=True
+    )
+
 # ===============================
 # ▶ ЗАПУСК
 # ===============================
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
