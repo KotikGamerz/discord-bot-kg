@@ -579,16 +579,26 @@ async def channels_purge(
 async def inactive_check(
     inter: disnake.ApplicationCommandInteraction,
     period: str = commands.Param(
-        choices=["1 неделя", "1 месяц", "3 месяца", "6 месяцев"]
+        choices=[
+            "1 неделя",
+            "1 месяц",
+            "3 месяца",
+            "6 месяцев"
+        ]
     )
 ):
+    # 🔒 Проверка доступа
     if inter.author.id != OWNER_ID:
-        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        await inter.response.send_message(
+            "❌ Нет доступа.",
+            ephemeral=True
+        )
         return
 
+    # ⏳ Говорим Discord'у: «я думаю»
     await inter.response.defer(ephemeral=True)
 
-    # ✅ timezone-aware UTC (вместо utcnow)
+    # 🕒 Текущее время (timezone-aware!)
     now = datetime.now(timezone.utc)
 
     delta_map = {
@@ -606,40 +616,46 @@ async def inactive_check(
         if member.bot:
             continue
 
-        ja = member.joined_at
-        if not ja:
+        if not member.joined_at:
             continue
 
-        # ✅ приводим joined_at к UTC-aware
-        if ja.tzinfo is None:
-            ja = ja.replace(tzinfo=timezone.utc)
-        else:
-            ja = ja.astimezone(timezone.utc)
+        joined_at = member.joined_at
 
-        if ja < cutoff:
-            inactive.append((member, ja))
+        # 🔁 если joined_at без timezone — приводим к UTC
+        if joined_at.tzinfo is None:
+            joined_at = joined_at.replace(tzinfo=timezone.utc)
 
+        if joined_at < cutoff:
+            inactive.append((member, joined_at))
+
+    # ❌ Никого не нашли
     if not inactive:
-        await inter.followup.send("✅ Неактивных участников не найдено.", ephemeral=True)
+        await inter.followup.send(
+            "✅ Неактивных участников не найдено.",
+            ephemeral=True
+        )
         return
 
+    # 👀 Превью (первые 25)
     preview = "\n".join(
-        f"• {m} (с {ja.date()})"
+        f"• {m.mention} (с {ja.date()})"
         for m, ja in inactive[:25]
     )
 
     members_only = [m for m, _ in inactive]
 
-view = KickInactiveConfirm(members_only)
+    view = KickInactiveConfirm(members_only)
 
-await inter.followup.send(
-    f"👤 **Потенциально неактивные ({period}):**\n{preview}\n\n"
-    f"Всего: **{len(inactive)}**\n\n"
-    f"⚠️ Будут кикнуты ТОЛЬКО выбранные пользователи.",
-    view=view,
-    ephemeral=True
-)
-
+    # 📤 ВАЖНО: этот await ВНУТРИ функции
+    await inter.followup.send(
+        f"👤 **Потенциально неактивные ({period})**\n"
+        f"Всего: **{len(inactive)}**\n\n"
+        f"{preview}\n\n"
+        f"⚠️ Будут кикнуты ТОЛЬКО выбранные",
+        view=view,
+        ephemeral=True
+    )
+    
 
 # ===============================
 # ▶ ЗАПУСК
@@ -647,6 +663,7 @@ await inter.followup.send(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
