@@ -539,21 +539,32 @@ async def channels_purge(
         ephemeral=True
     )
 
+
 @bot.slash_command(
     name="inactive_check",
-    description="Найти неактивных участников (по дате входа)"
+    description="Найти потенциально неактивных участников"
 )
 async def inactive_check(
     inter: disnake.ApplicationCommandInteraction,
     period: str = commands.Param(
         choices=[
-            "1 неделя", "1 месяц", "3 месяца", "6 месяцев"
+            "1 неделя",
+            "1 месяц",
+            "3 месяца",
+            "6 месяцев"
         ]
     )
 ):
+    # 🔒 Проверка доступа
     if inter.author.id != OWNER_ID:
-        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        await inter.response.send_message(
+            "❌ Нет доступа.",
+            ephemeral=True
+        )
         return
+
+    # ⏳ СРАЗУ говорим Discord'у: «я думаю»
+    await inter.response.defer(ephemeral=True)
 
     now = datetime.utcnow()
 
@@ -567,51 +578,26 @@ async def inactive_check(
     cutoff = now - delta_map[period]
 
     inactive = []
+
     for member in inter.guild.members:
         if member.bot:
             continue
+
         if member.joined_at and member.joined_at < cutoff:
             inactive.append(member)
 
     if not inactive:
-        await inter.response.send_message(
+        await inter.followup.send(
             "✅ Неактивных участников не найдено.",
             ephemeral=True
-        )
-        return
 
-    result = "\n".join(f"• {m} — с {m.joined_at.date()}" for m in inactive[:30])
-
-    await inter.response.send_message(
-        f"👤 **Потенциально неактивные ({period}):**\n{result}\n\n"
-        f"Всего: {len(inactive)}",
-        ephemeral=True
-    )
-
+            
 # ===============================
 # ▶ ЗАПУСК
 # ===============================
 
 keep_alive()
 bot.run(TOKEN)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
