@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from flask import Flask
 from threading import Thread
@@ -547,24 +547,17 @@ async def channels_purge(
 async def inactive_check(
     inter: disnake.ApplicationCommandInteraction,
     period: str = commands.Param(
-        choices=[
-            "1 неделя",
-            "1 месяц",
-            "3 месяца",
-            "6 месяцев"
-        ]
+        choices=["1 неделя", "1 месяц", "3 месяца", "6 месяцев"]
     )
 ):
     if inter.author.id != OWNER_ID:
-        await inter.response.send_message(
-            "❌ Нет доступа.",
-            ephemeral=True
-        )
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
         return
 
     await inter.response.defer(ephemeral=True)
 
-    now = datetime.utcnow()
+    # ✅ timezone-aware UTC (вместо utcnow)
+    now = datetime.now(timezone.utc)
 
     delta_map = {
         "1 неделя": timedelta(days=7),
@@ -580,24 +573,31 @@ async def inactive_check(
     for member in inter.guild.members:
         if member.bot:
             continue
-        if member.joined_at and member.joined_at < cutoff:
-            inactive.append(member)
+
+        ja = member.joined_at
+        if not ja:
+            continue
+
+        # ✅ приводим joined_at к UTC-aware
+        if ja.tzinfo is None:
+            ja = ja.replace(tzinfo=timezone.utc)
+        else:
+            ja = ja.astimezone(timezone.utc)
+
+        if ja < cutoff:
+            inactive.append((member, ja))
 
     if not inactive:
-        await inter.followup.send(
-            "✅ Неактивных участников не найдено.",
-            ephemeral=True
-        )
+        await inter.followup.send("✅ Неактивных участников не найдено.", ephemeral=True)
         return
 
     preview = "\n".join(
-        f"• {m} (с {m.joined_at.date()})"
-        for m in inactive[:25]
+        f"• {m} (с {ja.date()})"
+        for m, ja in inactive[:25]
     )
 
     await inter.followup.send(
-        f"👤 **Найдены потенциально неактивные ({period}):**\n"
-        f"{preview}\n\n"
+        f"👤 **Потенциально неактивные ({period}):**\n{preview}\n\n"
         f"Всего: **{len(inactive)}**",
         ephemeral=True
     )
@@ -610,6 +610,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
