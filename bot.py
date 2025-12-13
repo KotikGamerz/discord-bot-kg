@@ -555,7 +555,6 @@ async def inactive_check(
         ]
     )
 ):
-    # 🔒 Проверка доступа
     if inter.author.id != OWNER_ID:
         await inter.response.send_message(
             "❌ Нет доступа.",
@@ -563,7 +562,6 @@ async def inactive_check(
         )
         return
 
-    # ⏳ СРАЗУ говорим Discord'у: «я думаю»
     await inter.response.defer(ephemeral=True)
 
     now = datetime.utcnow()
@@ -582,7 +580,6 @@ async def inactive_check(
     for member in inter.guild.members:
         if member.bot:
             continue
-
         if member.joined_at and member.joined_at < cutoff:
             inactive.append(member)
 
@@ -590,8 +587,21 @@ async def inactive_check(
         await inter.followup.send(
             "✅ Неактивных участников не найдено.",
             ephemeral=True
-
         )
+        return
+
+    preview = "\n".join(
+        f"• {m} (с {m.joined_at.date()})"
+        for m in inactive[:25]
+    )
+
+    await inter.followup.send(
+        f"👤 **Найдены потенциально неактивные ({period}):**\n"
+        f"{preview}\n\n"
+        f"Всего: **{len(inactive)}**",
+        ephemeral=True
+    )
+
 
 
 # ===============================
@@ -600,6 +610,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
