@@ -222,6 +222,38 @@ class RoleDeleteConfirm(disnake.ui.View):
             view=None
         )
 
+class KickInactiveConfirm(disnake.ui.View):
+    def __init__(self, members: list[disnake.Member]):
+        super().__init__(timeout=60)
+        self.members = members
+
+    @disnake.ui.button(label="🦶 Кикнуть неактивных", style=disnake.ButtonStyle.danger)
+    async def kick(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        if inter.author.id != OWNER_ID:
+            await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+            return
+
+        kicked = 0
+
+        for member in self.members:
+            try:
+                await member.kick(reason="Неактивность")
+                kicked += 1
+            except:
+                pass  # нет прав / роль выше / ошибка
+
+        await inter.response.edit_message(
+            content=f"🦶 **Кикнуто пользователей:** {kicked}",
+            view=None
+        )
+
+    @disnake.ui.button(label="❌ Отмена", style=disnake.ButtonStyle.secondary)
+    async def cancel(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        await inter.response.edit_message(
+            content="❌ Действие отменено.",
+            view=None
+        )
+
 
 # =======================================
 # 🧩 КОМАНДА /ping
@@ -596,12 +628,17 @@ async def inactive_check(
         for m, ja in inactive[:25]
     )
 
-    await inter.followup.send(
-        f"👤 **Потенциально неактивные ({period}):**\n{preview}\n\n"
-        f"Всего: **{len(inactive)}**",
-        ephemeral=True
-    )
+    members_only = [m for m, _ in inactive]
 
+view = KickInactiveConfirm(members_only)
+
+await inter.followup.send(
+    f"👤 **Потенциально неактивные ({period}):**\n{preview}\n\n"
+    f"Всего: **{len(inactive)}**\n\n"
+    f"⚠️ Будут кикнуты ТОЛЬКО выбранные пользователи.",
+    view=view,
+    ephemeral=True
+)
 
 
 # ===============================
@@ -610,6 +647,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
