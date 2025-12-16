@@ -166,6 +166,87 @@ async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
 
     return new_msg
 
+
+# =======================================
+# 🔁 HNYC — ФОНОВЫЙ ПРОЦЕСС
+# =======================================
+
+@tasks.loop(seconds=30)
+async def hnyc_loop():
+    cfg = load_hnyc_config()
+
+    if not cfg.get("enabled"):
+        return
+
+    channel_id = cfg.get("channel_id")
+    if not channel_id:
+        return
+
+    channel = bot.get_channel(channel_id)
+    if not channel:
+        return
+
+    now = now_msk()
+    today = now.date()
+
+    # =========================
+    # 🌅 УТРО — 00:00
+    # =========================
+    if now.hour == 0 and now.minute == 0:
+        if cfg.get("last_morning_date") != str(today):
+
+            target = datetime.datetime(now.year + 1, 1, 1, tzinfo=MSK)
+            days_left = (target.date() - today).days
+
+            if days_left > 0:
+                await channel.send(
+                    f"🎄Новый год через **{days_left} дней**!\n@here"
+                )
+
+            cfg["last_morning_date"] = str(today)
+            save_hnyc_config(cfg)
+
+    # =========================
+    # 🌙 ВЕЧЕР — 19:30
+    # =========================
+    if now.hour == 19 and now.minute == 30:
+        if cfg.get("last_evening_date") != str(today):
+
+            last_idx = cfg.get("last_tip_index")
+            idx = random.randrange(len(HNYC_TIPS))
+
+            if last_idx is not None and len(HNYC_TIPS) > 1:
+                while idx == last_idx:
+                    idx = random.randrange(len(HNYC_TIPS))
+
+            tip = HNYC_TIPS[idx]
+
+            await channel.send(
+                f"✨ @here Тёплый совет вечера:\n{tip}"
+            )
+
+            cfg["last_evening_date"] = str(today)
+            cfg["last_tip_index"] = idx
+            save_hnyc_config(cfg)
+
+    # =========================
+    # 🎄 31 ДЕКАБРЯ — 13:00
+    # =========================
+    if (
+        today.month == 12
+        and today.day == 31
+        and now.hour == 13
+        and now.minute == 0
+        and not cfg.get("special_31_sent")
+    ):
+        await channel.send(
+            "🎄 Новый год уже близко! Обязательно помогите родителям накрывать на стол 🍽️\n@here"
+        )
+
+        cfg["special_31_sent"] = True
+        save_hnyc_config(cfg)
+
+
 # =======================================
 # 🌐 ДЕРЖИМ БОТА ЖИВЫМ (RENDER KEEP-ALIVE)
 # =======================================
@@ -197,8 +278,10 @@ bot = commands.InteractionBot(intents=intents)
 
 @bot.event
 async def on_ready():
-    await bot.sync_commands()
     print(f"✅ Бот онлайн как {bot.user}")
+
+    if not hnyc_loop.is_running():
+        hnyc_loop.start()
 
 # =======================================
 # 📨 ЛОВИМ СООБЩЕНИЕ СТОКА → переносим рекламку вниз
@@ -773,6 +856,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
