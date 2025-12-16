@@ -87,6 +87,17 @@ def save_hnyc_config(cfg: dict):
 
 
 # =======================================
+# ⏰ HNYC — ВРЕМЯ (GMT+3 / МОСКВА)
+# =======================================
+
+MSK = timezone(timedelta(hours=3))  # GMT+3
+
+def now_msk():
+    """Текущее время по Москве (timezone-aware)"""
+    return datetime.datetime.now(MSK)
+
+
+# =======================================
 # 📁 РАБОТА С КОНФИГОМ для stock
 # =======================================
 
@@ -762,6 +773,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
