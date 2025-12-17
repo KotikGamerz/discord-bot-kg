@@ -54,7 +54,6 @@ HNYC_TIPS = [
     "☕ Уют начинается с простых вещей",
     "🕯 Пусть этот вечер будет спокойным",
     "🎄 Уже совсем скоро всё изменится",
-    "🌟 Хороший момент, чтобы сказать кому-то спасибо",
     "❄️ Зима — время тишины и мыслей",
     "✨ Пусть этот вечер будет добрым",
     "🎁 Даже ожидание праздника — уже праздник"
@@ -78,6 +77,7 @@ def load_hnyc_config():
             "last_evening_date": None,     # дата последнего вечернего совета
             "last_tip_index": None,        # индекс последнего совета
             "special_31_sent": False       # отправлено ли событие 31 декабря
+            "last_action_ts": None         # контроллер действий
         }
 
 
@@ -171,7 +171,7 @@ async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
 # 🔁 HNYC — ФОНОВЫЙ ПРОЦЕСС
 # =======================================
 
-@tasks.loop(seconds=30)
+@tasks.loop(seconds=60)
 async def hnyc_loop():
     cfg = load_hnyc_config()
 
@@ -189,10 +189,16 @@ async def hnyc_loop():
     now = now_msk()
     today = now.date()
 
+    now_ts = int(now.timestamp())
+last_ts = cfg.get("last_action_ts")
+
+if last_ts and now_ts - last_ts < 60:
+    return
+
     # =========================
     # 🌅 УТРО — 00:00
     # =========================
-    if now.hour == 0 and now.minute == 0:
+    if now.hour == 0 and now.minute == 0 and now.second < 5:
         if cfg.get("last_morning_date") != str(today):
 
             target = datetime.datetime(now.year + 1, 1, 1, tzinfo=MSK)
@@ -204,12 +210,13 @@ async def hnyc_loop():
                 )
 
             cfg["last_morning_date"] = str(today)
-            save_hnyc_config(cfg)
+cfg["last_action_ts"] = now_ts
+save_hnyc_config(cfg)
 
     # =========================
     # 🌙 ВЕЧЕР — 19:30
     # =========================
-    if now.hour == 19 and now.minute == 30:
+    if now.hour == 19 and now.minute == 30 and now.second < 5:
         if cfg.get("last_evening_date") != str(today):
 
             last_idx = cfg.get("last_tip_index")
@@ -226,25 +233,28 @@ async def hnyc_loop():
             )
 
             cfg["last_evening_date"] = str(today)
-            cfg["last_tip_index"] = idx
-            save_hnyc_config(cfg)
+cfg["last_tip_index"] = idx
+cfg["last_action_ts"] = now_ts
+save_hnyc_config(cfg)
 
     # =========================
     # 🎄 31 ДЕКАБРЯ — 13:00
     # =========================
     if (
-        today.month == 12
-        and today.day == 31
-        and now.hour == 13
-        and now.minute == 0
-        and not cfg.get("special_31_sent")
-    ):
+    today.month == 12
+    and today.day == 31
+    and now.hour == 13
+    and now.minute == 0
+    and now.second < 5
+    and not cfg.get("special_31_sent")
+):
         await channel.send(
             "🎄 Новый год уже близко! Обязательно помогите родителям накрывать на стол 🍽️\n@here"
         )
 
         cfg["special_31_sent"] = True
-        save_hnyc_config(cfg)
+cfg["last_action_ts"] = now_ts
+save_hnyc_config(cfg)
 
 
 # =======================================
@@ -856,6 +866,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
