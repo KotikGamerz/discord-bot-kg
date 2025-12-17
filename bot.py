@@ -190,10 +190,10 @@ async def hnyc_loop():
     today = now.date()
 
     now_ts = int(now.timestamp())
-last_ts = cfg.get("last_action_ts")
+    last_ts = cfg.get("last_action_ts")
 
-if last_ts and now_ts - last_ts < 60:
-    return
+    if last_ts and now_ts - last_ts < 60:
+        return
 
     # =========================
     # 🌅 УТРО — 00:00
@@ -210,8 +210,8 @@ if last_ts and now_ts - last_ts < 60:
                 )
 
             cfg["last_morning_date"] = str(today)
-cfg["last_action_ts"] = now_ts
-save_hnyc_config(cfg)
+            cfg["last_action_ts"] = now_ts
+            save_hnyc_config(cfg)
 
     # =========================
     # 🌙 ВЕЧЕР — 19:30
@@ -233,28 +233,29 @@ save_hnyc_config(cfg)
             )
 
             cfg["last_evening_date"] = str(today)
-cfg["last_tip_index"] = idx
-cfg["last_action_ts"] = now_ts
-save_hnyc_config(cfg)
+            cfg["last_tip_index"] = idx
+            cfg["last_action_ts"] = now_ts
+            save_hnyc_config(cfg)
 
     # =========================
     # 🎄 31 ДЕКАБРЯ — 13:00
     # =========================
     if (
-    today.month == 12
-    and today.day == 31
-    and now.hour == 13
-    and now.minute == 0
-    and now.second < 5
-    and not cfg.get("special_31_sent")
-):
+        today.month == 12
+        and today.day == 31
+        and now.hour == 13
+        and now.minute == 0
+        and now.second < 5
+        and not cfg.get("special_31_sent")
+    ):
         await channel.send(
             "🎄 Новый год уже близко! Обязательно помогите родителям накрывать на стол 🍽️\n@here"
         )
 
         cfg["special_31_sent"] = True
-cfg["last_action_ts"] = now_ts
-save_hnyc_config(cfg)
+        cfg["last_action_ts"] = now_ts
+        save_hnyc_config(cfg)
+
 
 
 # =======================================
@@ -866,6 +867,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
