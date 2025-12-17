@@ -76,7 +76,7 @@ def load_hnyc_config():
             "last_morning_date": None,     # дата последнего утреннего сообщения
             "last_evening_date": None,     # дата последнего вечернего совета
             "last_tip_index": None,        # индекс последнего совета
-            "special_31_sent": False       # отправлено ли событие 31 декабря
+            "special_31_sent": False,      # отправлено ли событие 31 декабря
             "last_action_ts": None         # контроллер действий
         }
 
@@ -866,6 +866,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
