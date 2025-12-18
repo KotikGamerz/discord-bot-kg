@@ -170,8 +170,7 @@ async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
 # Новый год
 # ===========================
 
-    
-    @tasks.loop(seconds=60)
+@tasks.loop(seconds=60)
 async def hnyc_loop():
     cfg = load_hnyc_config()
 
@@ -247,7 +246,6 @@ async def hnyc_loop():
 
         cfg["special_31_sent"] = True
         save_hnyc_config(cfg)
-
 
 # =======================================
 # 🌐 ДЕРЖИМ БОТА ЖИВЫМ (RENDER KEEP-ALIVE)
@@ -858,6 +856,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
