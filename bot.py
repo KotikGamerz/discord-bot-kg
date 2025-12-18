@@ -39,7 +39,6 @@ STOCK_TRIGGER_TEXT = "Grow A Garden Stock"
 
 HNYC_TIPS = [
     "🎄 Самое время включить новогоднюю музыку и немного расслабиться",
-    "☕ Сделай себе тёплый чай и просто отдохни",
     "✨ Вспомни самый приятный момент этого года",
     "❄️ Даже если снега нет, зима уже чувствуется",
     "🕯 Создай уют: свет, тишина и покой",
@@ -167,11 +166,12 @@ async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
     return new_msg
 
 
-# =======================================
-# 🔁 HNYC — ФОНОВЫЙ ПРОЦЕСС
-# =======================================
+# ===========================
+# Новый год
+# ===========================
 
-@tasks.loop(seconds=60)
+    
+    @tasks.loop(seconds=60)
 async def hnyc_loop():
     cfg = load_hnyc_config()
 
@@ -187,37 +187,30 @@ async def hnyc_loop():
         return
 
     now = now_msk()
-    today = now.date()
-
-    now_ts = int(now.timestamp())
-    last_ts = cfg.get("last_action_ts")
-
-    if last_ts and now_ts - last_ts < 60:
-        return
+    today = str(now.date())
 
     # =========================
-    # 🌅 УТРО — 00:00
+    # 🌅 УТРО — ПОСЛЕ 00:00
     # =========================
-    if now.hour == 0 and now.minute == 0 and now.second < 5:
-        if cfg.get("last_morning_date") != str(today):
+    if now.hour >= 0:
+        if cfg.get("last_morning_date") != today:
 
             target = datetime.datetime(now.year + 1, 1, 1, tzinfo=MSK)
-            days_left = (target.date() - today).days
+            days_left = (target.date() - now.date()).days
 
             if days_left > 0:
                 await channel.send(
                     f"🎄Новый год через **{days_left} дней**!\n@here"
                 )
 
-            cfg["last_morning_date"] = str(today)
-            cfg["last_action_ts"] = now_ts
+            cfg["last_morning_date"] = today
             save_hnyc_config(cfg)
 
     # =========================
-    # 🌙 ВЕЧЕР — 19:30
+    # 🌙 ВЕЧЕР — ПОСЛЕ 19:30
     # =========================
-    if now.hour == 19 and now.minute == 30 and now.second < 5:
-        if cfg.get("last_evening_date") != str(today):
+    if (now.hour > 19) or (now.hour == 19 and now.minute >= 30):
+        if cfg.get("last_evening_date") != today:
 
             last_idx = cfg.get("last_tip_index")
             idx = random.randrange(len(HNYC_TIPS))
@@ -232,20 +225,20 @@ async def hnyc_loop():
                 f"✨ @here Тёплый совет вечера:\n{tip}"
             )
 
-            cfg["last_evening_date"] = str(today)
+            cfg["last_evening_date"] = today
             cfg["last_tip_index"] = idx
-            cfg["last_action_ts"] = now_ts
             save_hnyc_config(cfg)
 
     # =========================
-    # 🎄 31 ДЕКАБРЯ — 13:00
+    # 🎄 31 ДЕКАБРЯ — ПОСЛЕ 13:00
     # =========================
     if (
-        today.month == 12
-        and today.day == 31
-        and now.hour == 13
-        and now.minute == 0
-        and now.second < 5
+        now.month == 12
+        and now.day == 31
+        and (
+            now.hour > 13
+            or (now.hour == 13 and now.minute >= 0)
+        )
         and not cfg.get("special_31_sent")
     ):
         await channel.send(
@@ -253,9 +246,7 @@ async def hnyc_loop():
         )
 
         cfg["special_31_sent"] = True
-        cfg["last_action_ts"] = now_ts
         save_hnyc_config(cfg)
-
 
 
 # =======================================
@@ -867,6 +858,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
