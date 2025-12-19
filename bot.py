@@ -512,14 +512,8 @@ async def on_ready():
     BOT_READY_AT = datetime.datetime.utcnow()
 
     print(f"✅ Бот онлайн как {bot.user}")
-
-    # 🔒 Одноразовый sync slash-команд
-    if not hasattr(bot, "_commands_synced"):
-        await bot.sync_commands()
-        bot._commands_synced = True
-        print("🔄 Slash-команды синхронизированы")
-
     print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
+    
     await asyncio.sleep(STARTUP_DELAY_SECONDS)
 
     if not hnyc_loop.is_running():
@@ -1146,6 +1140,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
