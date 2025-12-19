@@ -98,6 +98,18 @@ def now_msk():
 
 
 # =======================================
+# ⏰ HNYC2 — ВРЕМЯ (GMT+2 / Europe/Chisinau)
+# =======================================
+
+EET = pytz.timezone("Europe/Chisinau")  # GMT+2 (и сам переведёт на летнее/зимнее)
+HNYC2_CONFIG_PATH = "hnyc2_config.json"
+
+def now_eet():
+    """Текущее время по Кишинёву (timezone-aware)"""
+    return datetime.datetime.now(EET)
+
+
+# =======================================
 # 📁 РАБОТА С КОНФИГОМ для stock
 # =======================================
 
@@ -857,6 +869,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
