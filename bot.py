@@ -110,6 +110,30 @@ def now_eet():
 
 
 # =======================================
+# 📁 HNYC2 — РАБОТА С КОНФИГОМ (страны)
+# =======================================
+
+def load_hnyc2_config():
+    try:
+        with open(HNYC2_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        # дефолтный конфиг
+        return {
+            "enabled": False,          # запущен ли процесс
+            "channel_id": None,        # канал для поздравлений
+            "last_sent_hour": None,    # последний час, когда отправляли (EET)
+            "finished": False          # завершён ли процесс полностью
+        }
+
+
+def save_hnyc2_config(cfg: dict):
+    with open(HNYC2_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=4, ensure_ascii=False)
+
+
+
+# =======================================
 # 📁 РАБОТА С КОНФИГОМ для stock
 # =======================================
 
@@ -869,6 +893,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
