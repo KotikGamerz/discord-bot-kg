@@ -2,4 +2,5 @@ disnake
 aiohttp
 python-dotenv
 flask
+pytz
 
