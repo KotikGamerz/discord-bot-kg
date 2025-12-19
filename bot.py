@@ -309,6 +309,43 @@ async def hnyc_loop():
         cfg["special_31_sent"] = True
         save_hnyc_config(cfg)
 
+
+
+# =======================================
+# 🔁 HNYC2 — ФОНОВЫЙ ПРОЦЕСС (ЛОГИКА)
+# =======================================
+
+@tasks.loop(seconds=60)
+async def hnyc2_loop():
+    cfg = load_hnyc2_config()
+
+    # процесс выключен
+    if not cfg.get("enabled"):
+        return
+
+    # процесс уже завершён
+    if cfg.get("finished"):
+        return
+
+    now = now_eet()
+    current_hour = now.hour
+
+    # если в этот час нет стран — ничего не делаем
+    if current_hour not in HNYC2_SCHEDULE:
+        return
+
+    # защита от повторной отправки в тот же час
+    if cfg.get("last_sent_hour") == current_hour:
+        return
+
+    # ⚠️ на следующем шаге здесь будет отправка сообщения
+    # сейчас мы просто "резервируем" час
+
+    cfg["last_sent_hour"] = current_hour
+    save_hnyc2_config(cfg)
+
+
+
 # =======================================
 # 🌐 ДЕРЖИМ БОТА ЖИВЫМ (RENDER KEEP-ALIVE)
 # =======================================
@@ -918,6 +955,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
