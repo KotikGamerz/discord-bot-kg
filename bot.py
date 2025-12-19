@@ -245,10 +245,6 @@ HNYC2_SCHEDULE = {
     "12:00_next": "🏁 Финал (последние зоны уже отпраздновали)"
 }
 
-def _hnyc2_key_for_hour(dt_gmt2: datetime.datetime) -> str:
-    # ключ вида "2025-12-31 23:00"
-    return dt_gmt2.strftime("%Y-%m-%d %H:00")
-
 def _hnyc2_hour_label(dt_gmt2: datetime.datetime) -> str:
     # "23:00"
     return dt_gmt2.strftime("%H:00")
@@ -285,8 +281,13 @@ async def hnyc2_loop():
     now = now_gmt2()
 
     # Окно работы: с 31 декабря 12:00 (GMT+2) до 1 января 12:00 (GMT+2) включительно
-    start = datetime.datetime(now.year, 12, 31, 12, 0, tzinfo=GMT2)
-    end   = datetime.datetime(now.year + 1, 1, 1, 12, 0, tzinfo=GMT2)
+    year = now.year
+    if now.month == 1:
+        year -= 1
+    
+    start = datetime.datetime(year, 12, 31, 12, 0, tzinfo=GMT2)
+    end   = datetime.datetime(year + 1, 1, 1, 12, 0, tzinfo=GMT2)
+
 
     if now < start:
         return
@@ -297,7 +298,7 @@ async def hnyc2_loop():
         save_hnyc2_config(cfg)
         return
 
-    last_sent = cfg.get("last_sent_key")  # "YYYY-MM-DD HH:00" или None
+    last_sent_hour = cfg.get("last_sent_hour")
 
     # Текущий “слот” по часу (округляем вниз)
     current_slot = now.replace(minute=0, second=0, microsecond=0)
@@ -306,36 +307,45 @@ async def hnyc2_loop():
     max_catchup_per_tick = 2
     sent_this_tick = 0
 
+
     # Идём от start до current_slot и отправляем то, что пропущено
     slot = start
     while slot <= current_slot and slot <= end and sent_this_tick < max_catchup_per_tick:
-        key = _hnyc2_key_for_hour(slot)
+        slot_hour = slot.hour
 
-        if (last_sent is None) or (key > last_sent):
+        if (last_sent_hour is None) or (slot_hour != last_sent_hour):
+
             label = _hnyc2_hour_label(slot)
-
+            ts = int(slot.timestamp())
+       
             # 1 января 12:00 — финальное сообщение
             if slot == end:
                 msg = "🎉 @here **Поздравления завершены!** Новый год прошёл по всем часовым зонам. Спасибо, что были вместе! 🎄"
                 ok = await _safe_send(channel, msg)
                 if not ok:
                     return
-                cfg["last_sent_key"] = key
+
+                cfg["last_sent_hour"] = slot_hour
                 cfg["enabled"] = False
                 cfg["finished"] = True
                 save_hnyc2_config(cfg)
                 return
 
+
             countries = HNYC2_SCHEDULE.get(label)
             if not countries:
                 countries = f"часовой слот {label} (GMT+2)"
 
-            msg = f"🕛🎄 {label} — @here\n**В этих странах наступил Новый год прямо сейчас:** {countries}"
+            msg = (
+                f"🕛🎄 <t:{ts}:t> — @here\n"
+                f"**В этих странах наступил Новый год прямо сейчас:** {countries}"
+            )
+
             ok = await _safe_send(channel, msg)
             if not ok:
                 return
 
-            cfg["last_sent_key"] = key
+            cfg["last_sent_hour"] = slot_hour
             save_hnyc2_config(cfg)
 
             sent_this_tick += 1
@@ -467,6 +477,9 @@ async def on_ready():
 
     if not hnyc_loop.is_running():
         hnyc_loop.start()
+
+    if not hnyc2_loop.is_running():
+        hnyc2_loop.start()
 
 # =======================================
 # 📨 ЛОВИМ СООБЩЕНИЕ СТОКА → переносим рекламку вниз
@@ -1083,6 +1096,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
