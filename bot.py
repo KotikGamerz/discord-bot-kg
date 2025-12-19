@@ -338,11 +338,29 @@ async def hnyc2_loop():
     if cfg.get("last_sent_hour") == current_hour:
         return
 
-    # ⚠️ на следующем шаге здесь будет отправка сообщения
-    # сейчас мы просто "резервируем" час
+    channel = bot.get_channel(cfg.get("channel_id"))
+if not channel:
+    return
 
-    cfg["last_sent_hour"] = current_hour
-    save_hnyc2_config(cfg)
+countries = HNYC2_SCHEDULE.get(current_hour)
+if not countries:
+    return
+
+# Формируем сообщение
+countries_text = ", ".join(countries)
+
+message = (
+    f"🎆 **В этих странах наступил Новый год прямо сейчас:**\n"
+    f"🎄 {countries_text}\n\n"
+    f"@here"
+)
+
+# Отправляем
+await channel.send(message)
+
+# Запоминаем час
+cfg["last_sent_hour"] = current_hour
+save_hnyc2_config(cfg)
 
 
 
@@ -361,6 +379,8 @@ def run_web():
 
 def keep_alive():
     Thread(target=run_web).start()
+
+
 
 # =======================================
 # 🤖 СОЗДАНИЕ БОТА
@@ -955,6 +975,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
