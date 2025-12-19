@@ -1,5 +1,6 @@
 import disnake
 from disnake.ext import commands, tasks
+from disnake.ext.commands import CommandSyncFlags
 from disnake.ui import View, Button
 import random
 import aiohttp
@@ -481,10 +482,16 @@ def keep_alive():
 intents = disnake.Intents.default()
 intents.members = True
 
+sync_flags = CommandSyncFlags(
+    sync_commands=True,
+    sync_commands_debug=False
+)
+
 bot = commands.InteractionBot(
     intents=intents,
-    sync_commands=False
+    command_sync_flags=sync_flags
 )
+
 
 
 # =======================================
@@ -505,8 +512,14 @@ async def on_ready():
     BOT_READY_AT = datetime.datetime.utcnow()
 
     print(f"✅ Бот онлайн как {bot.user}")
-    print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
 
+    # 🔒 Одноразовый sync slash-команд
+    if not hasattr(bot, "_commands_synced"):
+        await bot.sync_commands()
+        bot._commands_synced = True
+        print("🔄 Slash-команды синхронизированы")
+
+    print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
     await asyncio.sleep(STARTUP_DELAY_SECONDS)
 
     if not hnyc_loop.is_running():
@@ -1133,6 +1146,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
