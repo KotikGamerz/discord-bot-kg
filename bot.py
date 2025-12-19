@@ -11,6 +11,7 @@ from datetime import timedelta, timezone
 import json
 from flask import Flask
 from threading import Thread
+import pytz
 
 # =======================================
 # 🔧 ЗАГРУЗКА .ENV
@@ -856,6 +857,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
