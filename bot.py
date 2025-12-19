@@ -796,6 +796,48 @@ async def hnyc_stop(inter: disnake.ApplicationCommandInteraction):
 
 
 @bot.slash_command(
+    name="hnyc2_start",
+    description="Запустить процесс «С Новым годом, страны» (только владелец)"
+)
+async def hnyc2_start(inter: disnake.ApplicationCommandInteraction):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    cfg = load_hnyc2_config()
+    cfg["enabled"] = True
+    cfg["finished"] = False
+    cfg["channel_id"] = inter.channel.id
+    cfg["last_sent_hour"] = None
+
+    save_hnyc2_config(cfg)
+
+    await inter.response.send_message(
+        "🎆 Процесс «С Новым годом, страны» запущен в этом канале.",
+        ephemeral=True
+    )
+
+
+@bot.slash_command(
+    name="hnyc2_stop",
+    description="Остановить процесс «С Новым годом, страны» (только владелец)"
+)
+async def hnyc2_stop(inter: disnake.ApplicationCommandInteraction):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    cfg = load_hnyc2_config()
+    cfg["enabled"] = False
+    save_hnyc2_config(cfg)
+
+    await inter.response.send_message(
+        "🛑 Процесс «С Новым годом, страны» остановлен.",
+        ephemeral=True
+    )
+
+
+@bot.slash_command(
     name="croles",
     description="Массово удалить роли (до 25, только владелец)"
 )
@@ -975,6 +1017,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
