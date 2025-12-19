@@ -465,7 +465,11 @@ def keep_alive():
 intents = disnake.Intents.default()
 intents.members = True
 
-bot = commands.InteractionBot(intents=intents)
+bot = commands.InteractionBot(
+    intents=intents,
+    sync_commands=False
+)
+
 
 # =======================================
 # 🔔 СОБЫТИЕ on_ready
@@ -1096,6 +1100,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
