@@ -25,6 +25,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 # =======================================
 OWNER_ID = 1167514315864162395  
 CONFIG_PATH = "stock_config.json"
+HNYC2_CONFIG_PATH = "hnyc2_config.json"
 STICK_CONFIG_PATH = "stick_config.json"
 HNYC_CONFIG_PATH = "hnyc_config.json"
 
@@ -265,8 +266,16 @@ async def _safe_send(channel: disnake.TextChannel, text: str) -> bool:
 @tasks.loop(seconds=60)
 async def hnyc2_loop():
     cfg = load_hnyc2_config()
+
+    if BOT_READY_AT is None:
+        return
+
+    if (datetime.datetime.utcnow() - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+        return
+
     if not cfg.get("enabled"):
         return
+
     if cfg.get("finished"):
         return
 
@@ -277,6 +286,7 @@ async def hnyc2_loop():
     channel = bot.get_channel(channel_id)
     if not channel:
         return
+
 
     now = now_gmt2()
 
@@ -364,6 +374,12 @@ async def hnyc2_loop():
 @tasks.loop(seconds=60)
 async def hnyc_loop():
     cfg = load_hnyc_config()
+        
+    if BOT_READY_AT is None:
+        return
+
+    if (datetime.datetime.utcnow() - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+        return
 
     if not cfg.get("enabled"):
         return
@@ -472,18 +488,35 @@ bot = commands.InteractionBot(
 
 
 # =======================================
+# Предохранитель от резкого старта
+# =======================================
+
+BOT_READY_AT = None
+STARTUP_DELAY_SECONDS = 60
+
+
+# =======================================
 # 🔔 СОБЫТИЕ on_ready
 # =======================================
 
 @bot.event
 async def on_ready():
+    global BOT_READY_AT
+    BOT_READY_AT = datetime.datetime.utcnow()
+
     print(f"✅ Бот онлайн как {bot.user}")
+    print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
+
+    await asyncio.sleep(STARTUP_DELAY_SECONDS)
 
     if not hnyc_loop.is_running():
         hnyc_loop.start()
 
     if not hnyc2_loop.is_running():
         hnyc2_loop.start()
+
+    print("🚀 Фоновые задачи запущены")
+
 
 # =======================================
 # 📨 ЛОВИМ СООБЩЕНИЕ СТОКА → переносим рекламку вниз
@@ -1100,6 +1133,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
