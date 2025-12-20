@@ -290,7 +290,7 @@ async def hnyc2_loop():
     if BOT_READY_AT is None:
         return
 
-    if datetime.datetime.now(timezone.utc) - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+    if datetime.datetime.now(timezone.utc) - BOT_READY_AT.total_seconds() < STARTUP_DELAY_SECONDS:
         return
 
     if not cfg.get("enabled"):
@@ -398,7 +398,7 @@ async def hnyc_loop():
     if BOT_READY_AT is None:
         return
 
-    if datetime.datetime.now(timezone.utc) - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+    if datetime.datetime.now(timezone.utc) - BOT_READY_AT.total_seconds() < STARTUP_DELAY_SECONDS:
         return
 
     if not cfg.get("enabled"):
@@ -1183,6 +1183,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
