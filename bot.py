@@ -290,7 +290,7 @@ async def hnyc2_loop():
     if BOT_READY_AT is None:
         return
 
-    if (datetime.datetime.utcnow() - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+    if datetime.datetime.now(timezone.utc) - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
         return
 
     if not cfg.get("enabled"):
@@ -398,7 +398,7 @@ async def hnyc_loop():
     if BOT_READY_AT is None:
         return
 
-    if (datetime.datetime.utcnow() - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
+    if datetime.datetime.now(timezone.utc) - BOT_READY_AT).total_seconds() < STARTUP_DELAY_SECONDS:
         return
 
     if not cfg.get("enabled"):
@@ -552,7 +552,7 @@ STARTUP_DELAY_SECONDS = 60
 @bot.event
 async def on_ready():
     global BOT_READY_AT
-    BOT_READY_AT = datetime.datetime.utcnow()
+    BOT_READY_AT = datetime.datetime.now(timezone.utc)
 
     print(f"✅ Бот онлайн как {bot.user}")
     print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
@@ -609,7 +609,7 @@ async def fetch_stock():
         return None
 
 def create_stock_embed(seeds, gear, eggs):
-    t = int(datetime.datetime.utcnow().timestamp())
+    t = intdatetime.datetime.now(timezone.utc).timestamp())
     e = disnake.Embed(
         title=f"🌱 Сток Grow A Garden — <t:{t}:t>",
         color=disnake.Color.green()
@@ -1183,6 +1183,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
