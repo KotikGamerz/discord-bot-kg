@@ -25,16 +25,9 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 # ⚙ ОСНОВНЫЕ КОНСТАНТЫ
 # =======================================
 OWNER_ID = 1167514315864162395  
-CONFIG_PATH = "stock_config.json"
 HNYC2_CONFIG_PATH = "hnyc2_config.json"
 STICK_CONFIG_PATH = "stick_config.json"
 HNYC_CONFIG_PATH = "hnyc_config.json"
-
-STOCK_ENABLED = False
-STOCK_CHANNEL_ID = None
-
-# ключевая фраза по которой ловим сток-бота
-STOCK_TRIGGER_TEXT = "Grow A Garden Stock"
 
 
 # ==========================
@@ -152,78 +145,6 @@ def load_hnyc2_config():
 def save_hnyc2_config(cfg: dict):
     with open(HNYC2_CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=4, ensure_ascii=False)
-
-
-
-# =======================================
-# 📁 РАБОТА С КОНФИГОМ для stock
-# =======================================
-
-def load_config():
-    try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return {}
-
-def save_config(cfg):
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=4, ensure_ascii=False)
-
-# =======================================
-# 📁 РАБОТА С КОНФИГОМ для STICK
-# =======================================
-
-def load_stick_config():
-    try:
-        with open(STICK_CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return None
-
-def save_stick_config(cfg: dict):
-    with open(STICK_CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=4, ensure_ascii=False)
-
-# =======================================
-# 🔁 ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: отправка sticky-рекламки
-# =======================================
-
-async def send_sticky_in_channel(channel: disnake.TextChannel, cfg: dict):
-    old_id = cfg.get("message_id")
-
-    # Удаляем старое закреп-сообщение
-    if old_id:
-        try:
-            msg = await channel.fetch_message(old_id)
-            await msg.delete()
-        except:
-            pass  # нет доступа или сообщение удалено
-
-    # Цвет эмбеда
-    try:
-        ecolor = int(cfg.get("embed_color", "#5865F2").replace("#", ""), 16)
-    except:
-        ecolor = 0x5865F2
-
-    embed = disnake.Embed(
-        title=cfg.get("embed_title", "Магазин"),
-        description=cfg.get("embed_text", ""),
-        color=ecolor
-    )
-
-    # Отправляем новое сообщение
-    new_msg = await channel.send(
-        content=cfg.get("text", ""),
-        embed=embed
-    )
-
-    cfg["message_id"] = new_msg.id
-    cfg["channel_id"] = channel.id
-    save_stick_config(cfg)
-
-    return new_msg
-
 
 
 # =======================================
@@ -569,59 +490,6 @@ async def on_ready():
 
 
 # =======================================
-# 📨 ЛОВИМ СООБЩЕНИЕ СТОКА → переносим рекламку вниз
-# =======================================
-
-@bot.event
-async def on_message(message: disnake.Message):
-
-    # игнорируем самого бота
-    if message.author.id == bot.user.id:
-        return
-
-    cfg = load_stick_config()
-    if not cfg:
-        return  # sticky не настроен
-
-    if message.channel.id != cfg.get("channel_id"):
-        return  # чужой канал
-
-    # проверяем — это сток?
-    if STOCK_TRIGGER_TEXT not in message.content:
-        return
-
-    # переносим рекламку вниз
-    await send_sticky_in_channel(message.channel, cfg)
-
-# =======================================
-# 📡 STOCK API (пока не используем, но оставляем)
-# =======================================
-
-async def fetch_stock():
-    url = "https://gag-stock-api.onrender.com/stock"
-    try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(url) as r:
-                if r.status != 200:
-                    return None
-                return await r.json()
-    except:
-        return None
-
-def create_stock_embed(seeds, gear, eggs):
-    t = intdatetime.datetime.now(timezone.utc).timestamp())
-    e = disnake.Embed(
-        title=f"🌱 Сток Grow A Garden — <t:{t}:t>",
-        color=disnake.Color.green()
-    )
-
-    e.add_field(name="🌱 Семена", value="\n".join(seeds) if seeds else "Пусто")
-    e.add_field(name="🛠 Инструменты", value="\n".join(gear) if gear else "Пусто")
-    e.add_field(name="🥚 Яйца", value="\n".join(eggs) if eggs else "Пусто")
-
-    return e
-
-# =======================================
 # ❗КЛАССЫ
 # =======================================
 
@@ -753,17 +621,6 @@ async def stick(
 # =======================================
 # 🧩 ВСЕ ПРОШЛЫЕ КОМАНДЫ
 # =======================================
-
-@bot.slash_command(name="stock", description="Показать реальный сток Grow A Garden")
-async def stock(inter):
-    await inter.response.defer()
-    data = await fetch_stock()
-    if not data:
-        await inter.followup.send("❌ Не удалось получить сток.", ephemeral=True)
-        return
-
-    e = create_stock_embed(data["seeds"], data["gear"], data["eggs"])
-    await inter.followup.send(embed=e)
 
 @bot.slash_command(
     name="say",
@@ -1183,6 +1040,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
