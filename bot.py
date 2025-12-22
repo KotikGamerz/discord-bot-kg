@@ -623,6 +623,59 @@ async def stick(
 # =======================================
 
 @bot.slash_command(
+    name="guilds",
+    description="Показать список серверов, где установлен бот (OWNER)"
+)
+async def guilds(inter: disnake.ApplicationCommandInteraction):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    lines = []
+    for g in bot.guilds:
+        lines.append(f"• {g.name} — `{g.id}` — участников: {g.member_count}")
+
+    text = "\n".join(lines) if lines else "Бот не состоит ни в одном сервере."
+
+    # Discord ограничивает длину сообщения — на всякий случай режем
+    if len(text) > 1900:
+        text = text[:1900] + "\n... (обрезано)"
+
+    await inter.response.send_message(text, ephemeral=True)
+
+
+
+@bot.slash_command(
+    name="leave_guild",
+    description="Заставить бота выйти с сервера по ID (OWNER)"
+)
+async def leave_guild(
+    inter: disnake.ApplicationCommandInteraction,
+    guild_id: str
+):
+    if inter.author.id != OWNER_ID:
+        await inter.response.send_message("❌ Нет доступа.", ephemeral=True)
+        return
+
+    g = bot.get_guild(int(guild_id))
+    if not g:
+        await inter.response.send_message(
+            "❌ Бот не найден на сервере с таким ID.",
+            ephemeral=True
+        )
+        return
+
+    await inter.response.send_message(
+        f"⚠️ Подтверждение: бот сейчас выйдет с сервера **{g.name}** (`{g.id}`)",
+        ephemeral=True
+    )
+
+    await g.leave()
+
+
+
+
+@bot.slash_command(
     name="say",
     description="Отправить сообщение от имени бота (только владелец)"
 )
@@ -1040,6 +1093,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
