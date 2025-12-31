@@ -16,6 +16,18 @@ import pytz
 import asyncio
 
 # =======================================
+# SAFE-SEND
+# =======================================
+async def _safe_send(channel, text: str) -> bool:
+    try:
+        await channel.send(text)
+        return True
+    except Exception as e:
+        print(f"⚠️ HNYC2 send failed: {e}")
+        return False
+
+
+# =======================================
 # 🔧 ЗАГРУЗКА .ENV
 # =======================================
 load_dotenv(dotenv_path=Path('.') / '.env')
@@ -1044,6 +1056,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
