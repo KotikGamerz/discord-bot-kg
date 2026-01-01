@@ -1,9 +1,6 @@
 {
-  "enabled": false,
-  "channel_id": null,
-  "last_morning_date": null,
-  "last_morning_tip_date": null,
-  "last_evening_date": null,
-  "last_tip_index": null,
-  "special_31_sent": false
+    "enabled": false,
+    "channel_id": null,
+    "last_sent_date": null,
+    "finished": true
 }
