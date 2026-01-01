@@ -440,17 +440,32 @@ async def on_ready():
 
     print(f"✅ Бот онлайн как {bot.user}")
     print("⏳ Ждём 60 секунд перед запуском фоновых задач...")
-    
+
     await asyncio.sleep(STARTUP_DELAY_SECONDS)
 
-    if not hnyc_loop.is_running():
-        hnyc_loop.start()
+    # =========================
+    # 🎄 COUNTDOWN (HNYC)
+    # =========================
+    cfg = load_hnyc_config()
+    if cfg.get("enabled") and not cfg.get("finished"):
+        if not hnyc_loop.is_running():
+            hnyc_loop.start()
+            print("🎄 HNYC (countdown) запущен")
+    else:
+        print("🧊 HNYC (countdown) заморожен")
 
-    if not hnyc2_loop.is_running():
-        hnyc2_loop.start()
+    # =========================
+    # 🌍 СТРАНЫ (HNYC2)
+    # =========================
+    cfg2 = load_hnyc2_config()
+    if cfg2.get("enabled") and not cfg2.get("finished"):
+        if not hnyc2_loop.is_running():
+            hnyc2_loop.start()
+            print("🌍 HNYC2 (страны) запущен")
+    else:
+        print("🧊 HNYC2 (страны) заморожен")
 
-    print("🚀 Фоновые задачи запущены")
-
+    print("🚀 Проверка фоновых задач завершена")
 
 # =======================================
 # ❗КЛАССЫ
@@ -1056,6 +1071,7 @@ async def inactive_check(
 
 keep_alive()
 bot.run(TOKEN)
+
 
 
 
