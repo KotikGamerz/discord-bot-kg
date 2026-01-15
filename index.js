@@ -637,45 +637,6 @@ client.on('interactionCreate', async (interaction) => {
 });
 
   // =========================
-  // /stick
-  // =========================
-
-  if (commandName === "stick") {
-    const title = interaction.options.getString("title");
-    const text = interaction.options.getString("text");
-
-    if (interaction.user.id !== OWNER_ID) {
-      return interaction.reply({ content: "❌ Только владелец может использовать /stick.", ephemeral: true });
-    }
-
-    await interaction.deferReply({ ephemeral: true });
-
-    const channel = interaction.channel;
-
-    // удаляем прошлый sticky
-    if (global.last_sticky_message_id && global.last_sticky_channel_id === channel.id) {
-      try {
-        const oldMsg = await channel.messages.fetch(global.last_sticky_message_id);
-        await oldMsg.delete();
-      } catch {}
-    }
-
-    const embed = {
-      title: title,
-      description: text,
-      color: 0x00ff00
-    };
-
-    const newMsg = await channel.send({ embeds: [embed] });
-
-    global.last_sticky_message_id = newMsg.id;
-    global.last_sticky_channel_id = channel.id;
-
-    return interaction.followUp({ content: "✅ Sticky обновлён!", ephemeral: true });
-  }
-
-
-  // =========================
   // /guilds
   // =========================
 
