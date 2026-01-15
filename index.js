@@ -634,8 +634,6 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply(`${ms}мс`);
   }
 
-});
-
   // =========================
   // /guilds
   // =========================
@@ -953,11 +951,13 @@ client.on('interactionCreate', async (interaction) => {
     if (!inactive.length) {
       await interaction.editReply({ content: "✅ Неактивных нет." });
       return;
+    }
+
+    return kickInactiveConfirm(interaction, inactive);
   }
 
-return kickInactiveConfirm(interaction, inactive);
-}
 
+});
 
 // =======================================
 // 🔔 СОБЫТИЕ clientReady (аналог on_ready)
