@@ -11,21 +11,6 @@ const commands = [
     .setName('ping')
     .setDescription('Проверка задержки'),
 
-  // /stick
-  new SlashCommandBuilder()
-    .setName('stick')
-    .setDescription('Закрепить сообщение-баннер')
-    .addStringOption(o =>
-      o.setName('title')
-       .setDescription('Заголовок баннера')
-       .setRequired(true)
-    )
-    .addStringOption(o =>
-      o.setName('text')
-       .setDescription('Текст баннера')
-       .setRequired(true)
-    ),
-
   // /guilds
   new SlashCommandBuilder()
     .setName('guilds')
@@ -237,3 +222,4 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
