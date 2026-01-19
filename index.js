@@ -18,6 +18,9 @@ dayjs.extend(timezone);
 
 const express = require('express');
 
+const sharp = require("sharp");
+const https = require("https");
+
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
 // =======================================
@@ -673,8 +676,53 @@ client.on('interactionCreate', async (interaction) => {
     });
 
     return guild.leave();
-  }
+  }      
 
+
+  // =========================
+  // /togif
+  // =========================
+
+  if (commandName === "togif") {
+
+    await interaction.deferReply();
+
+    const attachment = interaction.options.getAttachment("image");
+
+    if (!attachment || !attachment.contentType?.startsWith("image/")) {
+      return interaction.editReply("❌ Это не изображение.");
+    }
+
+    const imageUrl = attachment.url;
+
+    try {
+      const buffer = await new Promise((resolve, reject) => {
+        https.get(imageUrl, res => {
+          const data = [];
+          res.on("data", chunk => data.push(chunk));
+          res.on("end", () => resolve(Buffer.concat(data)));
+        }).on("error", reject);
+      });
+
+      const gifBuffer = await sharp(buffer)
+        .gif()
+        .toBuffer();
+
+      await interaction.editReply({
+        content: "✅ Готово! Вот твоя GIF:",
+        files: [
+          {
+            attachment: gifBuffer,
+            name: "kg_convert.gif"
+          }
+        ]
+      });
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка при конвертации.");
+    }
+  }
 
   // =========================
   // /say
