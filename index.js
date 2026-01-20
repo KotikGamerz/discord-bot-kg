@@ -655,6 +655,78 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: text, ephemeral: true });
   }
 
+  // =========================
+  // /caption
+  // =========================
+
+  if (commandName === "caption") {
+
+    await interaction.deferReply();
+
+    const attachment = interaction.options.getAttachment("image");
+    const text = interaction.options.getString("text");
+
+    if (!attachment) {
+      return interaction.editReply("❌ Изображение не найдено.");
+    }
+
+    try {
+      // скачиваем картинку
+      const response = await axios.get(attachment.url, {
+        responseType: "arraybuffer"
+      });
+
+      const img = sharp(response.data);
+      const metadata = await img.metadata();
+
+      const captionHeight = 140;
+
+      // создаём итоговое изображение
+      const finalImage = await sharp({
+        create: {
+          width: metadata.width,
+          height: metadata.height + captionHeight,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 } // белый фон
+        }
+      })
+      .composite([
+        // текст сверху
+        {
+          input: Buffer.from(
+            `<svg width="${metadata.width}" height="${captionHeight}">
+               <style>
+                 text { fill: black; font-size: 48px; font-family: sans-serif; }
+               </style>
+               <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">
+                 ${text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+               </text>
+             </svg>`
+          ),
+          top: 0,
+          left: 0
+        },
+        // оригинальная картинка снизу
+        { input: response.data, top: captionHeight, left: 0 }
+      ])
+      .png()
+      .toBuffer();
+
+      await interaction.editReply({
+        content: "✅ Готово! Подпись добавлена:",
+        files: [{
+          attachment: finalImage,
+          name: "caption.png"
+        }]
+      });
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка при обработке изображения.");
+    }
+  }
+
+
 
   // =========================
   // /leave_guild
