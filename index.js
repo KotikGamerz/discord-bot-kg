@@ -833,8 +833,64 @@ client.on('interactionCreate', async (interaction) => {
       embeds: [{ title, description: text, color }]
     });
   }
+  
+  // =========================
+  // /compress
+  // =========================
 
+  if (commandName === "compress") {
 
+    await interaction.deferReply();
+
+    const attachment = interaction.options.getAttachment("image");
+
+    if (!attachment) {
+      return interaction.editReply("❌ Изображение не найдено.");
+    }
+
+    try {
+      // скачиваем изображение
+      const response = await axios.get(attachment.url, {
+        responseType: "arraybuffer"
+      });
+
+      const inputBuffer = response.data;
+
+      // определяем формат по имени файла
+      const fileName = attachment.name.toLowerCase();
+
+      let outputBuffer;
+      let outputName;
+
+      if (fileName.endsWith(".png")) {
+        // PNG — максимальное сжатие без потери размеров
+        outputBuffer = await sharp(inputBuffer)
+          .png({ compressionLevel: 9 })
+          .toBuffer();
+        outputName = "compressed.png";
+
+      } else {
+        // JPG / JPEG / другие → сохраняем как JPEG с качеством 70
+        outputBuffer = await sharp(inputBuffer)
+          .jpeg({ quality: 70 })
+          .toBuffer();
+        outputName = "compressed.jpg";
+      }
+
+      await interaction.editReply({
+        content: "✅ Изображение сжато без изменения разрешения:",
+        files: [{
+          attachment: outputBuffer,
+          name: outputName
+        }]
+      });
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка при сжатии изображения.");
+    }
+  }
+  
   // =========================
   // /combined
   // =========================
