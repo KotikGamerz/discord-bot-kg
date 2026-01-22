@@ -40,7 +40,7 @@ const commands = [
   // /compress
   new SlashCommandBuilder()
     .setName('compress')
-    .setDescription('Сжать изображение без изменения размера')
+    .setDescription('Сжать изображение без изменения размера в пикслеях')
     .addAttachmentOption(option =>
       option.setName('image')
         .setDescription('Изображение для сжатия')
@@ -243,6 +243,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
