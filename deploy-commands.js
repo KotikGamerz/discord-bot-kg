@@ -36,7 +36,18 @@ const commands = [
        .setRequired(true)
     ),
 
-// Добавляем команду /togif
+
+  // /compress
+  new SlashCommandBuilder()
+    .setName('compress')
+    .setDescription('Сжать изображение без изменения размера')
+    .addAttachmentOption(option =>
+      option.setName('image')
+        .setDescription('Изображение для сжатия')
+        .setRequired(true)
+    ),
+
+  // Добавляем команду /togif
   new SlashCommandBuilder()
     .setName('togif')
     .setDescription('Конвертировать изображение в формат .gif')
@@ -232,5 +243,6 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
