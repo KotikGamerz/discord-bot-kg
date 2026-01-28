@@ -917,7 +917,33 @@ client.on('interactionCreate', async (interaction) => {
       content: `👢 Пользователь **${target.tag}** кикнут!\n📌 Причина: **${cause}**`
     });
   }
-  
+
+  // =========================
+  // /ban
+  // =========================
+
+  if (commandName === "ban") {
+
+    const target = interaction.options.getUser("user");
+    const cause = interaction.options.getString("cause");
+
+    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
+
+    if (!member) {
+      return interaction.reply({ content: "❌ Пользователь не найден на сервере.", ephemeral: true });
+    }
+
+    if (!member.bannable) {
+      return interaction.reply({ content: "❌ Я не могу забанить этого пользователя (роль выше моей).", ephemeral: true });
+    }
+
+    await member.ban({ reason: cause });
+
+    await interaction.reply({
+      content: `🔨 Пользователь **${target.tag}** забанен!\n📌 Причина: **${cause}**`
+    });
+  }
+
   // =========================
   // /combined
   // =========================
