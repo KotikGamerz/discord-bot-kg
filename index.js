@@ -891,7 +891,6 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-
   // =========================
   // /kick
   // =========================
@@ -941,6 +940,39 @@ client.on('interactionCreate', async (interaction) => {
 
     await interaction.reply({
       content: `🔨 Пользователь **${target.tag}** забанен!\n📌 Причина: **${cause}**`
+    });
+  }
+
+  // =========================
+  // /warn
+  // =========================
+
+  if (commandName === "warn") {
+
+    const target = interaction.options.getUser("user");
+    const message = interaction.options.getString("message");
+
+    // Загружаем файл предупреждений
+    let warnings = {};
+    try {
+      warnings = JSON.parse(fs.readFileSync("./warnings.json", "utf8"));
+    } catch {
+      warnings = {};
+    }
+
+    // Увеличиваем счётчик
+    if (!warnings[target.id]) warnings[target.id] = 0;
+    warnings[target.id] += 1;
+
+    // Сохраняем обратно
+    fs.writeFileSync("./warnings.json", JSON.stringify(warnings, null, 2));
+
+    const warnCount = warnings[target.id];
+
+    await interaction.reply({
+      content:
+        `⚠️ Предупреждение №**${warnCount}** для пользователя **${target.tag}**!\n` +
+        `💬 Сообщение от администрации: **${message}**`
     });
   }
 
