@@ -1,4 +1,4 @@
-const { REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 require('dotenv').config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -36,7 +36,23 @@ const commands = [
        .setRequired(true)
     ),
 
-
+  // /kick
+  new SlashCommandBuilder()
+    .setName('kick')
+    .setDescription('Кикнуть пользователя')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('Кого кикнуть')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('cause')
+        .setDescription('Причина')
+        .setRequired(true)
+    )
+      .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+  
+  
   // /compress
   new SlashCommandBuilder()
     .setName('compress')
@@ -47,7 +63,7 @@ const commands = [
         .setRequired(true)
     ),
 
-  // Добавляем команду /togif
+  // /togif
   new SlashCommandBuilder()
     .setName('togif')
     .setDescription('Конвертировать изображение в формат .gif')
@@ -243,6 +259,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
