@@ -890,6 +890,33 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply("❌ Ошибка при сжатии изображения.");
     }
   }
+
+
+  // =========================
+  // /kick
+  // =========================
+
+  if (commandName === "kick") {
+
+    const target = interaction.options.getUser("user");
+    const cause = interaction.options.getString("cause");
+
+    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
+
+    if (!member) {
+      return interaction.reply({ content: "❌ Пользователь не найден на сервере.", ephemeral: true });
+    }
+
+    if (!member.kickable) {
+      return interaction.reply({ content: "❌ Я не могу кикнуть этого пользователя (роль выше моей).", ephemeral: true });
+    }
+
+    await member.kick(cause);
+
+    await interaction.reply({
+      content: `👢 Пользователь **${target.tag}** кикнут!\n📌 Причина: **${cause}**`
+    });
+  }
   
   // =========================
   // /combined
