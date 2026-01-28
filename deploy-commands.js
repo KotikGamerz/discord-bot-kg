@@ -52,6 +52,22 @@ const commands = [
     )
       .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
   
+
+  // /ban
+  new SlashCommandBuilder()
+    .setName('ban')
+    .setDescription('Забанить пользователя')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('Кого забанить')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('cause')
+        .setDescription('Причина')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
   
   // /compress
   new SlashCommandBuilder()
@@ -259,6 +275,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
