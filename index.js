@@ -977,6 +977,41 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // =========================
+  // /unwarn
+  // =========================
+
+  if (commandName === "unwarn") {
+
+    const target = interaction.options.getUser("user");
+
+    // Загружаем файл предупреждений
+    let warnings = {};
+    try {
+      warnings = JSON.parse(fs.readFileSync("./warnings.json", "utf8"));
+    } catch {
+      warnings = {};
+    }
+
+    // Если предупреждений нет
+    if (!warnings[target.id] || warnings[target.id] === 0) {
+      return interaction.reply({
+        content: `ℹ️ У пользователя **${target.tag}** нет предупреждений.`,
+        ephemeral: true
+      });
+    }
+
+    // Сбрасываем счётчик
+    warnings[target.id] = 0;
+
+    // Сохраняем файл
+    fs.writeFileSync("./warnings.json", JSON.stringify(warnings, null, 2));
+
+    await interaction.reply({
+      content: `✅ Предупреждения пользователя **${target.tag}** сброшены до нуля.`
+    });
+  }
+
+  // =========================
   // /combined
   // =========================
 
