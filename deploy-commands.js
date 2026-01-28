@@ -85,6 +85,17 @@ const commands = [
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
+  // /unwarn
+  new SlashCommandBuilder()
+    .setName('unwarn')
+    .setDescription('Сбросить предупреждения пользователю')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('Кому сбросить предупреждения')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+
   // /compress
   new SlashCommandBuilder()
     .setName('compress')
@@ -291,6 +302,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
