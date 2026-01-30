@@ -757,12 +757,12 @@ client.on('interactionCreate', async (interaction) => {
 
   if (commandName === "translate") {
 
-    await interaction.deferReply();
-
-    const text = interaction.options.getString("text");
-    const to = interaction.options.getString("to");
+    await interaction.deferReply({ ephemeral: false });
 
     try {
+      const text = interaction.options.getString("text");
+      const to = interaction.options.getString("to");
+
       const result = await translate(text, { to });
 
       await interaction.editReply({
@@ -774,7 +774,10 @@ client.on('interactionCreate', async (interaction) => {
 
     } catch (error) {
       console.error(error);
-      await interaction.editReply("❌ Ошибка перевода.");
+
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply("❌ Ошибка перевода.");
+      }
     }
   }
 
