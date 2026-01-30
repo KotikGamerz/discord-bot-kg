@@ -20,7 +20,8 @@ const express = require('express');
 
 const sharp = require("sharp");
 const https = require("https");
-const translate = require('@vitalets/google-translate-api');
+const translate = require('@vitalets/google-translate-api').translate;
+const res = await translate(text, { to });
 
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
