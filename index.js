@@ -757,7 +757,15 @@ client.on('interactionCreate', async (interaction) => {
 
   if (commandName === "translate") {
 
-    await interaction.deferReply({ ephemeral: false });
+    // 🔒 Пытаемся defer ТОЛЬКО если можно
+    try {
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferReply();
+      }
+    } catch {
+      // interaction уже мёртв — дальше НИЧЕГО не делаем
+      return;
+    }
 
     try {
       const text = interaction.options.getString("text");
@@ -775,6 +783,7 @@ client.on('interactionCreate', async (interaction) => {
     } catch (error) {
       console.error(error);
 
+      // 🔒 Отвечаем ТОЛЬКО если interaction жив
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply("❌ Ошибка перевода.");
       }
