@@ -20,6 +20,7 @@ const express = require('express');
 
 const sharp = require("sharp");
 const https = require("https");
+const translate = require('@vitalets/google-translate-api');
 
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
@@ -750,6 +751,40 @@ client.on('interactionCreate', async (interaction) => {
     return guild.leave();
   }      
 
+  // =========================
+  // /translate
+  // =========================
+
+  if (commandName === "translate") {
+
+    await interaction.deferReply();
+
+    const text = interaction.options.getString("text");
+    const to = interaction.options.getString("to");
+
+    // Ограничиваем список языков (10 штук)
+    const allowed = ["en", "ru", "ro", "uk", "fr", "de", "es", "it", "pl", "tr"];
+    if (!allowed.includes(to)) {
+      return interaction.editReply(
+        "❌ Неподдерживаемый язык. Используй: " + allowed.join(", ")
+      );
+    }
+
+    try {
+      const res = await translate(text, { to });
+
+      await interaction.editReply({
+        content:
+          `🌍 **Перевод**\n` +
+          `➡️ **На:** ${to}\n\n` +
+          `**Результат:**\n${res.text}`
+      });
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка перевода.");
+    }
+  }
 
   // =========================
   // /togif
