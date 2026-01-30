@@ -21,7 +21,6 @@ const express = require('express');
 const sharp = require("sharp");
 const https = require("https");
 const translate = require('@vitalets/google-translate-api').translate;
-const res = await translate(text, { to });
 
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
@@ -763,26 +762,18 @@ client.on('interactionCreate', async (interaction) => {
     const text = interaction.options.getString("text");
     const to = interaction.options.getString("to");
 
-    // Ограничиваем список языков (10 штук)
-    const allowed = ["en", "ru", "ro", "uk", "fr", "de", "es", "it", "pl", "tr"];
-    if (!allowed.includes(to)) {
-      return interaction.editReply(
-        "❌ Неподдерживаемый язык. Используй: " + allowed.join(", ")
-      );
-    }
-
     try {
-      const res = await translate(text, { to });
+      const result = await translate(text, { to });
 
       await interaction.editReply({
         content:
           `🌍 **Перевод**\n` +
-          `➡️ **На:** ${to}\n\n` +
-          `**Результат:**\n${res.text}`
+          `➡️ **Язык:** ${to}\n\n` +
+          `**Результат:**\n${result.text}`
       });
 
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       await interaction.editReply("❌ Ошибка перевода.");
     }
   }
