@@ -105,6 +105,16 @@ const commands = [
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
+  // /shortlink
+  new SlashCommandBuilder()
+    .setName('shortlink')
+    .setDescription('Сократить длинную ссылку')
+    .addStringOption(o =>
+      o.setName('url')
+       .setDescription('Ссылка для сокращения')
+       .setRequired(true)
+    ),
+
   // /unwarn
   new SlashCommandBuilder()
     .setName('unwarn')
@@ -322,6 +332,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
