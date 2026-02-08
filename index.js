@@ -791,6 +791,35 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // =========================
+  // /shortlink
+  // =========================
+
+  if (commandName === "shortlink") {
+
+    await interaction.deferReply();
+
+    const url = interaction.options.getString("url");
+
+    if (!url.startsWith("http")) {
+      return interaction.editReply("❌ Укажи корректную ссылку (http/https).");
+    }
+
+    try {
+      const res = await axios.get(
+        `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`
+      );
+
+      await interaction.editReply(
+        `🔗 **Короткая ссылка:**\n${res.data}`
+      );
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка сокращения ссылки.");
+    }
+  }
+
+  // =========================
   // /mute
   // =========================
 
