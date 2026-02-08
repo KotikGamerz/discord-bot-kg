@@ -115,6 +115,16 @@ const commands = [
        .setRequired(true)
     ),
 
+  // /qr
+  new SlashCommandBuilder()
+    .setName('qr')
+    .setDescription('Создать QR-код из текста или ссылки')
+    .addStringOption(o =>
+      o.setName('text')
+       .setDescription('Текст или ссылка для QR')
+       .setRequired(true)
+    ),
+
   // /unwarn
   new SlashCommandBuilder()
     .setName('unwarn')
@@ -332,6 +342,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
