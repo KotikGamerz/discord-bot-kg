@@ -56,7 +56,16 @@ const commands = [
         .setRequired(true)
     )
       .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
-  
+
+  // /warninfo
+  new SlashCommandBuilder()
+    .setName('warninfo')
+    .setDescription('Показать количество предупреждений пользователя')
+    .addUserOption(o =>
+      o.setName('user')
+       .setDescription('Пользователь')
+       .setRequired(true)
+    ),
 
   // /mute
   new SlashCommandBuilder()
@@ -347,6 +356,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
