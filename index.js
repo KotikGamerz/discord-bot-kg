@@ -892,6 +892,39 @@ client.on('interactionCreate', async (interaction) => {
     }
   });
 
+  // =========================
+  // /qr
+  // =========================
+
+  if (commandName === "qr") {
+
+    await interaction.deferReply();
+
+    const text = interaction.options.getString("text");
+
+    try {
+      const QRCode = require("qrcode");
+
+      const buffer = await QRCode.toBuffer(text, {
+        width: 512,
+        margin: 2
+      });
+
+      await interaction.editReply({
+        content: "📱 Вот твой QR-код:",
+        files: [
+          {
+            attachment: buffer,
+            name: "kotikg_qr.png"
+          }
+        ]
+      });
+
+    } catch (e) {
+      console.error(e);
+      await interaction.editReply("❌ Ошибка создания QR-кода.");
+    }
+  }
 
   // =========================
   // /togif
