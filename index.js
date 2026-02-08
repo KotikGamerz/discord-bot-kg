@@ -848,6 +848,41 @@ client.on('interactionCreate', async (interaction) => {
   }      
 
   // =========================
+  // /proembed
+  // =========================
+
+  if (commandName === "proembed") {
+
+    // 👉 ВСТАВЬ СЮДА СВОЙ DISCORD ID
+    const OWNER_ID = "1167514315864162395";
+
+    if (interaction.user.id !== OWNER_ID) {
+      return interaction.reply({
+        content: "❌ Эта команда только для владельца бота.",
+        ephemeral: true
+      });
+    }
+
+    const { EmbedBuilder } = require("discord.js");
+
+    const title = interaction.options.getString("title");
+    const text = interaction.options.getString("text");
+    const color = interaction.options.getString("color");
+    const image = interaction.options.getString("image");
+
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(text)
+      .setColor(color || "#2b2d31");
+
+    if (image && image.startsWith("http")) {
+      embed.setImage(image);
+    }
+
+    await interaction.reply({ embeds: [embed] });
+  }
+
+  // =========================
   // /translate
   // =========================
 
