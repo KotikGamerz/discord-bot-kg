@@ -53,6 +53,26 @@ const commands = [
       .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
   
 
+  // /mute
+  new SlashCommandBuilder()
+    .setName('mute')
+    .setDescription('Замутить пользователя на указанное время')
+    .addUserOption(o =>
+      o.setName('user')
+       .setDescription('Кого замутить')
+       .setRequired(true)
+    )
+    .addStringOption(o =>
+      o.setName('time')
+       .setDescription('Длительность (10m, 1h, 1d)')
+       .setRequired(true)
+    )
+    .addStringOption(o =>
+      o.setName('reason')
+       .setDescription('Причина мута')
+       .setRequired(false)
+    ),
+
   // /ban
   new SlashCommandBuilder()
     .setName('ban')
@@ -302,6 +322,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
