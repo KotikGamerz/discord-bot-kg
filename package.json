@@ -19,6 +19,7 @@
     "node-cron": "^4.2.1",
     "sharp": "^0.33.0",
     "@vitalets/google-translate-api": "^9.2.0"
+    "qrcode": "^1.5.4"
   }
 }
 
