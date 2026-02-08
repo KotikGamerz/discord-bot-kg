@@ -952,13 +952,14 @@ client.on('interactionCreate', async (interaction) => {
 
   // ===== /mute =====
   if (interaction.commandName === "mute") {
-    await interaction.deferReply({ flags: 64 });
+
+    await interaction.deferReply(); // теперь публичный ответ
 
     try {
       const member = interaction.options.getMember("user");
       const time = interaction.options.getString("time");
       const reason = interaction.options.getString("reason") || "Без причины";
-
+  
       if (!member)
         return interaction.editReply("❌ Пользователь не найден.");
 
@@ -985,15 +986,12 @@ client.on('interactionCreate', async (interaction) => {
       await member.timeout(duration, reason);
 
       await interaction.editReply(
-      `🔇 ${member.user.tag} замучен на ${time}\nПричина: ${reason}`
+        `🔇 **${member.user.tag}** замьючен на **${time}**\nПричина: ${reason}`
       );
 
     } catch (err) {
       console.error("Mute error:", err);
-      if (interaction.deferred)
-        interaction.editReply("❌ Ошибка мута.");
-      else
-        interaction.reply({ content: "❌ Ошибка мута.", flags: 64 });
+      await interaction.editReply("❌ Ошибка мута.");
     }
   }
 
