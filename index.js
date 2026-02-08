@@ -728,6 +728,31 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // =========================
+  // /warninfo
+  // =========================
+
+  if (commandName === "warninfo") {
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const user = interaction.options.getUser("user");
+
+    const warnsPath = path.join(__dirname, "warns.json");
+
+    let warns = {};
+    if (fs.existsSync(warnsPath)) {
+      warns = JSON.parse(fs.readFileSync(warnsPath));
+    }
+
+    const count = warns[user.id] || 0;
+
+    await interaction.editReply(
+      `⚠️ У пользователя **${user.tag}** предупреждений: **${count}**`
+    );
+  }
+
+
+  // =========================
   // /devquote
   // =========================
 
