@@ -36,6 +36,11 @@ const commands = [
        .setRequired(true)
     ),
 
+  // /devquote
+  new SlashCommandBuilder()
+    .setName('devquote')
+    .setDescription('Случайная цитата разработчика'),
+
   // /kick
   new SlashCommandBuilder()
     .setName('kick')
@@ -342,6 +347,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
