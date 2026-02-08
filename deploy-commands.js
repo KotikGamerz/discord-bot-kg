@@ -41,6 +41,31 @@ const commands = [
     .setName('devquote')
     .setDescription('Случайная цитата разработчика'),
 
+  // /proembed
+  new SlashCommandBuilder()
+    .setName('proembed')
+    .setDescription('PRO embed (только владелец бота)')
+    .addStringOption(o =>
+      o.setName('title')
+       .setDescription('Заголовок')
+       .setRequired(true)
+    )
+    .addStringOption(o =>
+      o.setName('text')
+       .setDescription('Текст embed')
+       .setRequired(true)
+    )
+    .addStringOption(o =>
+      o.setName('color')
+       .setDescription('HEX цвет (#ff0000)')
+       .setRequired(false)
+    )
+    .addStringOption(o =>
+      o.setName('image')
+       .setDescription('URL картинки')
+       .setRequired(false)
+    ),
+
   // /kick
   new SlashCommandBuilder()
     .setName('kick')
@@ -356,6 +381,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
