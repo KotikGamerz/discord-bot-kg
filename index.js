@@ -950,78 +950,52 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  // =========================
-  // /mute
-  // =========================
+  // ===== /mute =====
+  if (interaction.commandName === "mute") {
+    await interaction.deferReply({ flags: 64 });
 
-  client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+    try {
+      const member = interaction.options.getMember("user");
+      const time = interaction.options.getString("time");
+      const reason = interaction.options.getString("reason") || "Без причины";
 
-    if (interaction.commandName === "mute") {
-      try {
-        const member = interaction.options.getMember("user");
-        const time = interaction.options.getString("time");
-        const reason =
-          interaction.options.getString("reason") || "Без причины";
+      if (!member)
+        return interaction.editReply("❌ Пользователь не найден.");
 
-        if (!member) {
-          return interaction.reply({
-            content: "❌ Пользователь не найден.",
-            flags: 64
-          });
-        }
+      if (!member.moderatable)
+        return interaction.editReply("❌ Я не могу замутить этого пользователя.");
 
-        if (!interaction.member.permissions.has("ModerateMembers")) {
-          return interaction.reply({
-            content: "❌ У тебя нет прав на мут.",
-            flags: 64
-          });
-        }
-
-        await interaction.deferReply();
-
-        // Парсим время (10m, 1h, 30s, 1d)
-        const match = time.match(/^(\d+)([smhd])$/);
-        if (!match) {
-          return interaction.editReply(
-            "❌ Формат времени: 10m / 1h / 30s / 1d"
-          );
-        }
-
-        const value = parseInt(match[1]);
-        const unit = match[2];
-
-        const ms =
-          {
-            s: 1000,
-            m: 60000,
-            h: 3600000,
-            d: 86400000
-          }[unit] * value;
-
-        await member.timeout(ms, reason);
-
-        await interaction.editReply(
-          `🔇 **Мут выдан**\n` +
-          `👤 ${member.user.tag}\n` +
-          `⏱ ${time}\n` +
-          `📌 ${reason}`
+      // Парсер времени
+      const match = time.match(/^(\d+)([smhd])$/i);
+      if (!match)
+        return interaction.editReply(
+          "❌ Формат времени: `10s`, `10m`, `1h`, `1d`"
         );
 
-      } catch (err) {
-        console.error(err);
+      const num = Number(match[1]);
+      const unit = match[2].toLowerCase();
 
-        if (interaction.deferred || interaction.replied) {
-          await interaction.editReply("❌ Ошибка мута.");
-        } else {
-          await interaction.reply({
-            content: "❌ Ошибка мута.",
-            flags: 64
-          });
-        }
-      }
+      const duration = {
+        s: num * 1000,
+        m: num * 60_000,
+        h: num * 3_600_000,
+        d: num * 86_400_000,
+      }[unit];
+
+      await member.timeout(duration, reason);
+
+      await interaction.editReply(
+      `🔇 ${member.user.tag} замучен на ${time}\nПричина: ${reason}`
+      );
+
+    } catch (err) {
+      console.error("Mute error:", err);
+      if (interaction.deferred)
+        interaction.editReply("❌ Ошибка мута.");
+      else
+        interaction.reply({ content: "❌ Ошибка мута.", flags: 64 });
     }
-  });
+  }
 
   // =========================
   // /qr
