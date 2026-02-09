@@ -1,3 +1,20 @@
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+const log = (type, msg) => {
+  const time = new Date().toLocaleString();
+  console.log(`[${time}] [${type}] ${msg}`);
+};
+
+global.logInfo = (msg) => log("INFO", msg);
+global.logWarn = (msg) => log("WARN", msg);
+global.logError = (msg) => log("ERROR", msg);
+
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 
 const { MessageFlags } = require('discord.js');
@@ -96,7 +113,7 @@ async function safeSend(channel, text) {
     await channel.send(text);
     return true;
   } catch (error) {
-    console.log(`⚠️ HNYC2 send failed: ${error}`);
+    logError(error);
     return false;
   }
 }
