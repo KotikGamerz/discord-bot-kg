@@ -1046,6 +1046,49 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
+  // =====================
+  // /choose
+  // =====================
+
+  if (commandName === "choose") {
+    const options = [
+      interaction.options.getString("option1"),
+      interaction.options.getString("option2"),
+      interaction.options.getString("option3"),
+      interaction.options.getString("option4"),
+      interaction.options.getString("option5")
+    ].filter(Boolean);
+
+    const choice = options[Math.floor(Math.random() * options.length)];
+
+    return interaction.reply(`🎲 Я выбираю: **${choice}**`);
+  }
+
+
+  // =====================
+  // /8ball
+  // =====================
+
+  if (commandName === "8ball") {
+    const answers = [
+      "Да.",
+      "Нет.",
+      "Скорее да.",
+      "Скорее нет.",
+      "Определённо.",
+      "Спроси позже.",
+      "Шансы хорошие.",
+      "Не рассчитывай.",
+      "Возможно.",
+      "100% да."
+    ];
+
+    const question = interaction.options.getString("question");
+    const answer = answers[Math.floor(Math.random() * answers.length)];
+
+    return interaction.reply(`🎱 **Вопрос:** ${question}\n**Ответ:** ${answer}`);
+  }
+
   // =========================
   // /togif
   // =========================
