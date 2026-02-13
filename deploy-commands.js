@@ -127,6 +127,26 @@ const commands = [
        .setRequired(false)
     ),
 
+  // /choose
+  new SlashCommandBuilder()
+    .setName('choose')
+    .setDescription('Выбрать случайный вариант')
+    .addStringOption(o => o.setName('option1').setDescription('Вариант 1').setRequired(true))
+    .addStringOption(o => o.setName('option2').setDescription('Вариант 2').setRequired(true))
+    .addStringOption(o => o.setName('option3').setDescription('Вариант 3').setRequired(false))
+    .addStringOption(o => o.setName('option4').setDescription('Вариант 4').setRequired(false))
+    .addStringOption(o => o.setName('option5').setDescription('Вариант 5').setRequired(false)),
+
+  // /8ball
+  new SlashCommandBuilder()
+    .setName('8ball')
+    .setDescription('Магический шар отвечает')
+    .addStringOption(o =>
+      o.setName('question')
+        .setDescription('Ваш вопрос')
+        .setRequired(true)
+    ),
+
   // /ban
   new SlashCommandBuilder()
     .setName('ban')
@@ -396,6 +416,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
