@@ -36,6 +36,21 @@ const commands = [
        .setRequired(true)
     ),
 
+  // /caption
+  new SlashCommandBuilder()
+    .setName('caption')
+    .setDescription('Добавить подпись к изображению')
+    .addAttachmentOption(o =>
+      o.setName('image')
+        .setDescription('Изображение')
+        .setRequired(true)
+    ) 
+    .addStringOption(o =>
+      o.setName('text')
+        .setDescription('Подпись')
+        .setRequired(true)
+    )
+
   // /devquote
   new SlashCommandBuilder()
     .setName('devquote')
@@ -381,6 +396,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
