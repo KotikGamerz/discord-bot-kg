@@ -1333,24 +1333,94 @@ client.on('interactionCreate', async (interaction) => {
 
 
   // =========================
-  // /userinfo
+  // /userinfo UPDATED
   // =========================
 
   if (commandName === "userinfo") {
     const user = interaction.options.getUser("user") || interaction.user;
+    const member = interaction.guild?.members.cache.get(user.id);
+
+    // Получаем баннер если есть
+    let bannerURL = null;
+    try {
+      const fetchedUser = await user.fetch();
+      bannerURL = fetchedUser.bannerURL({ size: 1024, dynamic: true });
+    } catch {}
+
+    const avatarURL = user.displayAvatarURL({ size: 1024, dynamic: true });
 
     const embed = {
-      title: "Информация",
-      thumbnail: { url: user.displayAvatarURL() },
+      title: `👤 ${user.username}`,
+      color: 0x00ffcc,
+      thumbnail: { url: avatarURL },
+
       fields: [
-        { name: "Имя", value: user.username },
-        { name: "ID", value: String(user.id) }
-      ],
-      color: 0x00ffcc
+        {
+          name: "Username",
+          value: `\`${user.username}\``,
+          inline: true
+        },
+        {
+          name: "Display name",
+          value: `\`${user.globalName || "нет"}\``,
+          inline: true
+        },
+        {
+          name: "Server nick",
+          value: `\`${member?.nickname || "нет"}\``,
+          inline: true
+        },
+        {
+          name: "ID",
+          value: `\`${user.id}\``,
+          inline: true
+        },
+        {
+          name: "Аккаунт создан",
+          value: `<t:${Math.floor(user.createdTimestamp/1000)}:F>`,
+          inline: true
+        },
+        {
+          name: "На сервере с",
+          value: member?.joinedTimestamp
+            ? `<t:${Math.floor(member.joinedTimestamp/1000)}:F>`
+            : "ЛС / неизвестно",
+          inline: true
+        },
+        {
+          name: "Бот?",
+          value: user.bot ? "🤖 Да" : "👤 Нет",
+          inline: true
+        },
+        {
+          name: "Аватар HD",
+          value: `[Открыть](${avatarURL})`,
+          inline: true
+        }
+      ]
     };
+
+    // Роли (если есть сервер)
+    if (member) {
+      const roles = member.roles.cache
+        .filter(r => r.id !== interaction.guild.id)
+        .map(r => `<@&${r.id}>`)
+        .join(", ");
+
+      embed.fields.push({
+        name: `Роли (${member.roles.cache.size - 1})`,
+        value: roles || "нет"
+      });
+    }
+
+    // Баннер
+    if (bannerURL) {
+      embed.image = { url: bannerURL };
+    }
 
     return interaction.reply({ embeds: [embed] });
   }
+
 
 
   // =========================
