@@ -689,7 +689,7 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
-      // скачиваем картинку
+
       const response = await axios.get(attachment.url, {
         responseType: "arraybuffer"
       });
@@ -697,35 +697,70 @@ client.on('interactionCreate', async (interaction) => {
       const img = sharp(response.data);
       const metadata = await img.metadata();
 
-      const captionHeight = 140;
+      // 🔥 Автоскейл текста
+      const fontSize = Math.max(24, Math.floor(metadata.height * 0.06));
+      const captionHeight = Math.floor(fontSize * 2.6);
 
-      // создаём итоговое изображение
+      // Escape HTML
+      const safeText = text
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+
+      // SVG с переносом строк
+      const svgText = `
+        <svg width="${metadata.width}" height="${captionHeight}">
+          <style>
+            .title {
+              fill: black;
+              font-size: ${fontSize}px;
+              font-family: sans-serif;
+              font-weight: bold;
+              stroke: white;
+              stroke-width: ${Math.max(2, fontSize*0.08)};
+              paint-order: stroke;
+            }
+          </style>
+
+          <foreignObject x="0" y="0" width="100%" height="100%">
+            <div xmlns="http://www.w3.org/1999/xhtml"
+                 style="
+                   display:flex;
+                   align-items:center;
+                   justify-content:center;
+                   width:100%;
+                   height:100%;
+                   text-align:center;
+                   padding:10px;
+                   box-sizing:border-box;
+                   word-wrap:break-word;
+                   overflow:hidden;
+                 ">
+              <span class="title">${safeText}</span>
+            </div>
+          </foreignObject>
+        </svg>
+      `;
+
       const finalImage = await sharp({
         create: {
           width: metadata.width,
           height: metadata.height + captionHeight,
           channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 } // белый фон
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
         }
       })
       .composite([
-        // текст сверху
         {
-          input: Buffer.from(
-            `<svg width="${metadata.width}" height="${captionHeight}">
-               <style>
-                 text { fill: black; font-size: 48px; font-family: sans-serif; }
-               </style>
-               <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">
-                 ${text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-               </text>
-             </svg>`
-          ),
+          input: Buffer.from(svgText),
           top: 0,
           left: 0
         },
-        // оригинальная картинка снизу
-        { input: response.data, top: captionHeight, left: 0 }
+        {
+          input: response.data,
+          top: captionHeight,
+          left: 0
+        }
       ])
       .png()
       .toBuffer();
@@ -734,7 +769,7 @@ client.on('interactionCreate', async (interaction) => {
         content: "✅ Готово! Подпись добавлена:",
         files: [{
           attachment: finalImage,
-          name: "caption.png"
+          name: "kg_caption.png"
         }]
       });
 
@@ -743,6 +778,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply("❌ Ошибка при обработке изображения.");
     }
   }
+      
 
   // =========================
   // /warninfo
