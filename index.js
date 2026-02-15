@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 
 require('dotenv').config();
+require("./xpSystem/database");
 
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
