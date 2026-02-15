@@ -24,9 +24,10 @@ const axios = require('axios');
 
 const fs = require('fs');
 const path = require('path');
+const messageXp = require("./xpSystem/messageXp");
 
 require('dotenv').config();
-require("./xpSystem/database");
+
 
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
@@ -637,8 +638,17 @@ client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildVoiceStates
   ]
+});
+
+// =======================================
+// ЛИСТЕНЕР СООБЩЕНИЙ
+// =======================================
+
+client.on("messageCreate", message => {
+  messageXp(message);
 });
 
 // =======================================
