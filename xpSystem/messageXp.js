@@ -13,7 +13,7 @@ module.exports = async function messageXp(message) {
     "SELECT value FROM settings WHERE key = 'xp_enabled'"
   ).get();
 
-  if (!xpEnabled || xpEnabled.value !== "true") return;
+  //if (!xpEnabled || xpEnabled.value !== "true") return;
 
   const userId = message.author.id;
 
