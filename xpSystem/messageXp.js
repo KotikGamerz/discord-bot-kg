@@ -38,6 +38,11 @@ module.exports = async function messageXp(message) {
   // XP = длина сообщения, максимум 50
   let xp = Math.min(content.length, 50);
 
+  // LOG (добавили)
+  console.log(
+    `[XP] ${message.author.tag} | +${xp} XP | "${message.content}"`
+  );
+
   // ===== WEEKEND BOOST =====
   const weekend = db.prepare(
     "SELECT value FROM settings WHERE key = 'weekend_boost'"
