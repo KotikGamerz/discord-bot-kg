@@ -648,7 +648,7 @@ client = new Client({
 // =======================================
 
 client.on("messageCreate", message => {
-  messageXp(message);
+  console.log("MESSAGE EVENT FIRED:", message.content);
 });
 
 // =======================================
