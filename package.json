@@ -19,7 +19,9 @@
     "node-cron": "^4.2.1",
     "sharp": "^0.33.0",
     "@vitalets/google-translate-api": "^9.2.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "mathjs": "^11.11.0",
+    "better-sqlite3": "^9.4.0"
   }
 }
 
