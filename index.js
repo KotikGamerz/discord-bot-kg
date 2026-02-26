@@ -21,6 +21,7 @@ const { MessageFlags } = require('discord.js');
 
 const cron = require('node-cron');
 const axios = require('axios');
+const { calculate } = require("./utils/calcEngine");
 
 const fs = require('fs');
 const path = require('path');
@@ -779,7 +780,28 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply("❌ Ошибка при обработке изображения.");
     }
   }
-      
+
+  // =========================
+  // /calc
+  // =========================
+
+  if (commandName === "calc") {
+
+    const expr = interaction.options.getString("пример");
+
+    const res = calculate(expr);
+
+    if (!res.ok) {
+      return interaction.reply({
+        content: `Пример: ${expr}\n${res.error}`,
+        ephemeral: true
+      });
+    }
+
+    return interaction.reply({
+      content: `Пример: ${expr}\nОтвет: ${res.value}`
+    });
+  }
 
   // =========================
   // /warninfo
