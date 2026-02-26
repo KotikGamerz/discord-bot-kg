@@ -36,6 +36,17 @@ const commands = [
        .setRequired(true)
     ),
 
+  // /calc
+  new SlashCommandBuilder()
+    .setName("calc")
+    .setDescription("Калькулятор")
+    .addStringOption(option =>
+       option
+        .setName("пример")
+        .setDescription("Например: 2+2")
+        .setRequired(true)
+    )
+  
   // /caption
   new SlashCommandBuilder()
     .setName('caption')
@@ -416,6 +427,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.error("❌ Ошибка регистрации:", error);
   }
 })();
+
 
 
 
