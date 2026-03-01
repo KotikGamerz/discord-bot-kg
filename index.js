@@ -41,6 +41,10 @@ const sharp = require("sharp");
 const https = require("https");
 const translate = require('@vitalets/google-translate-api').translate;
 
+const NIGHT_HEADERS = {
+  authorization: process.env.NIGHT_API_KEY
+};
+
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
 // =======================================
@@ -58,15 +62,7 @@ const STICK_CONFIG_PATH = "stick_config.json";
 const HNYC_CONFIG_PATH = "hnyc_config.json";
 
 let BOT_READY_AT = null;
-const STARTUP_DELAY_SECONDS = 60
-
-
-// =======================================
-// /stick — память последнего закреплённого сообщения
-// =======================================
-global.last_sticky_message_id = null;
-global.last_sticky_channel_id = null;
-
+const STARTUP_DELAY_SECONDS = 60p
 
 // ==========================
 // 🎄 ВЕЧЕРНИЕ НОВОГОДНИЕ СОВЕТЫ (заморожено до следующего НГ)
@@ -627,6 +623,25 @@ async function kickInactiveConfirm(interaction, members) {
       collector.stop();
     }
   });
+}
+
+// =======================================
+// ФУНКЦИЯ Night API
+// =======================================
+
+async function nightImage(endpoint) {
+  try {
+    const res = await axios.get(
+      `https://api.night-api.com/images/animals/${endpoint}`,
+      { headers: NIGHT_HEADERS }
+    );
+
+    return res.data?.content?.url || null;
+
+  } catch (err) {
+    console.error("Night API error:", err.response?.status || err.message);
+    return null;
+  }
 }
 
 // =======================================
@@ -1556,35 +1571,60 @@ client.on('interactionCreate', async (interaction) => {
     });
   }
 
+ // ==== /cat =====
+  if (interaction.commandName === "cat") {
+  const img = await nightImage("cat");
 
-  // =========================
-  // /cat
-  // =========================
-
-  if (commandName === "cat") {
-    const r = await axios.get("https://api.thecatapi.com/v1/images/search");
-    return interaction.reply(r.data[0].url);
+  if (!img) {
+    return interaction.reply({
+      content: "❌ Night API не ответил.",
+      ephemeral: true
+    });
   }
 
-  if (commandName === "dog") {
-    const r = await axios.get("https://dog.ceo/api/breeds/image/random");
-    return interaction.reply(r.data.message);
+  return interaction.reply(img);
   }
 
-  if (commandName === "fox") {
-    const r = await axios.get("https://randomfox.ca/floof/");
-    return interaction.reply(r.data.image);
+ // ==== /dog ====
+  if (interaction.commandName === "dog") {
+  const img = await nightImage("dog");
+
+  if (!img) {
+    return interaction.reply({
+      content: "❌ Night API не ответил.",
+      ephemeral: true
+    });
   }
 
-  if (commandName === "hamster") {
-    const r = await axios.get(
-      "https://api.night-api.com/images/animals/hamster",
-      { headers: { authorization: "wjeHiPP0rd-wXiN99rkH5iGKPqJBweF-2SoiKnAcZ8" } }
-    );
-    const img = r.data?.content?.url;
-    return interaction.reply(img || "❌ Ошибка API.");
+  return interaction.reply(img);
   }
 
+ // ==== /fox ====
+  if (interaction.commandName === "fox") {
+  const img = await nightImage("fox");
+
+  if (!img) {
+    return interaction.reply({
+      content: "❌ Night API не ответил.",
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply(img);
+  }
+ // ==== /hamster ====
+  if (interaction.commandName === "hamster") {
+  const img = await nightImage("hamster");
+
+  if (!img) {
+    return interaction.reply({
+      content: "❌ Night API не ответил.",
+      ephemeral: true
+    });
+  }
+
+  return interaction.reply(img);
+  }
 
   // =========================
   // HNYC управление
