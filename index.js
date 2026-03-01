@@ -21,13 +21,11 @@ const { MessageFlags } = require('discord.js');
 
 const cron = require('node-cron');
 const axios = require('axios');
-const { calculate } = require("./utils/calcEngine");
 
 const fs = require('fs');
 const path = require('path');
 
 require('dotenv').config();
-require("./database");
 
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
@@ -62,7 +60,7 @@ const STICK_CONFIG_PATH = "stick_config.json";
 const HNYC_CONFIG_PATH = "hnyc_config.json";
 
 let BOT_READY_AT = null;
-const STARTUP_DELAY_SECONDS = 60p
+const STARTUP_DELAY_SECONDS = 60;
 
 // ==========================
 // 🎄 ВЕЧЕРНИЕ НОВОГОДНИЕ СОВЕТЫ (заморожено до следующего НГ)
