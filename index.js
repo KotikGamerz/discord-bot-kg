@@ -724,38 +724,31 @@ client.on('interactionCreate', async (interaction) => {
 
       // SVG с переносом строк
       const svgText = `
-        <svg width="${metadata.width}" height="${captionHeight}">
-          <style>
-            .title {
-              fill: black;
-              font-size: ${fontSize}px;
-              font-family: sans-serif;
-              font-weight: bold;
-              stroke: white;
-              stroke-width: ${Math.max(2, fontSize*0.08)};
-              paint-order: stroke;
-            }
-          </style>
+        const svgText = `
+          <svg width="${metadata.width}" height="${captionHeight}">
+            <style>
+              .title {
+                fill: black;
+                font-size: ${fontSize}px;
+                font-family: sans-serif;
+                font-weight: bold;
+                stroke: white;
+                stroke-width: ${Math.max(2, fontSize * 0.08)};
+                paint-order: stroke;
+              }
+            </style>
 
-          <foreignObject x="0" y="0" width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml"
-                 style="
-                   display:flex;
-                   align-items:center;
-                   justify-content:center;
-                   width:100%;
-                   height:100%;
-                   text-align:center;
-                   padding:10px;
-                   box-sizing:border-box;
-                   word-wrap:break-word;
-                   overflow:hidden;
-                 ">
-              <span class="title">${safeText}</span>
-            </div>
-          </foreignObject>
-        </svg>
-      `;
+            <text
+              x="50%"
+              y="50%"
+              dominant-baseline="middle"
+              text-anchor="middle"
+              class="title"
+            >
+              ${safeText}
+            </text>
+          </svg>
+        `;
 
       const finalImage = await sharp({
         create: {
