@@ -657,22 +657,6 @@ for (const file of commandFiles) {
 }
 
 // =======================================
-// ТЕСТОВАЯ КОМАНДА
-// =======================================
-
-if (!interaction.isChatInputCommand()) return;
-
-const command = client.commands.get(interaction.commandName);
-if (!command) return;
-
-try {
-  await command.execute(interaction);
-} catch (err) {
-  console.error(err);
-  await interaction.reply("❌ Ошибка выполнения команды");
-}
-
-// =======================================
 // 🧩 РЕГИСТРАЦИЯ SLASH-КОМАНД
 // =======================================
 
