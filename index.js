@@ -15,39 +15,43 @@ global.logInfo = (msg) => log("INFO", msg);
 global.logWarn = (msg) => log("WARN", msg);
 global.logError = (msg) => log("ERROR", msg);
 
-const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
+require("dotenv").config();
 
-const { MessageFlags } = require('discord.js');
+const fs = require("fs");
+const path = require("path");
+const https = require("https");
+const express = require("express");
+const axios = require("axios");
+const cron = require("node-cron");
+const sharp = require("sharp");
 
-const cron = require('node-cron');
-const axios = require('axios');
+const { Client, GatewayIntentBits, Partials, Events } = require("discord.js");
+const translate = require("@vitalets/google-translate-api").translate;
 
-const fs = require('fs');
-const path = require('path');
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
 
-require('dotenv').config();
-
-const dayjs = require('dayjs');
-const utc = require('dayjs/plugin/utc');
-const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const express = require('express');
-
-const sharp = require("sharp");
-const https = require("https");
-const translate = require('@vitalets/google-translate-api').translate;
-
+const TOKEN = process.env.DISCORD_TOKEN;
 const NIGHT_HEADERS = {
   authorization: process.env.NIGHT_API_KEY
 };
+
+const OWNER_ID = "1167514315864162395";
+const HNYC2_CONFIG_PATH = "hnyc2_config.json";
+const STICK_CONFIG_PATH = "stick_config.json";
+const HNYC_CONFIG_PATH = "hnyc_config.json";
+
+let BOT_READY_AT = null;
+const STARTUP_DELAY_SECONDS = 30;
 
 // =======================================
 // 🔧 ЗАГРУЗКА .ENV
 // =======================================
 
-require('dotenv').config();
 const TOKEN = process.env.DISCORD_TOKEN;
 
 // =======================================
@@ -654,6 +658,37 @@ client = new Client({
     GatewayIntentBits.GuildMembers
   ]
 });
+
+// ======================================
+// ПОДКЛЮЧЕНИЕ КОМАНД
+// ======================================
+
+client.commands = new Map();
+
+const commandFiles = fs
+  .readdirSync("./commands")
+  .filter(file => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
+
+// =======================================
+// ТЕСТОВАЯ КОМАНДА
+// =======================================
+
+if (!interaction.isChatInputCommand()) return;
+
+const command = client.commands.get(interaction.commandName);
+if (!command) return;
+
+try {
+  await command.execute(interaction);
+} catch (err) {
+  console.error(err);
+  await interaction.reply("❌ Ошибка выполнения команды");
+}
 
 // =======================================
 // 🧩 РЕГИСТРАЦИЯ SLASH-КОМАНД
