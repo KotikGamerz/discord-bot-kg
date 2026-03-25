@@ -48,18 +48,6 @@ const HNYC_CONFIG_PATH = "hnyc_config.json";
 let BOT_READY_AT = null;
 const STARTUP_DELAY_SECONDS = 30;
 
-// =======================================
-// ⚙ ОСНОВНЫЕ КОНСТАНТЫ
-// =======================================
-
-const OWNER_ID = "1167514315864162395";
-const HNYC2_CONFIG_PATH = "hnyc2_config.json";
-const STICK_CONFIG_PATH = "stick_config.json";
-const HNYC_CONFIG_PATH = "hnyc_config.json";
-
-let BOT_READY_AT = null;
-const STARTUP_DELAY_SECONDS = 60;
-
 // ==========================
 // 🎄 ВЕЧЕРНИЕ НОВОГОДНИЕ СОВЕТЫ (заморожено до следующего НГ)
 // ==========================
