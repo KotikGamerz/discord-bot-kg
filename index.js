@@ -717,38 +717,37 @@ client.on('interactionCreate', async (interaction) => {
       const captionHeight = Math.floor(fontSize * 2.6);
 
       // Escape HTML
-      const safeText = text
+      const safeText = (text || " ")
         .replace(/&/g,"&amp;")
         .replace(/</g,"&lt;")
         .replace(/>/g,"&gt;");
 
-      // SVG с переносом строк
+      // ✅ ВАЖНО: ОДНА строка svgText (без вложений!)
       const svgText = `
-        const svgText = `
-          <svg width="${metadata.width}" height="${captionHeight}">
-            <style>
-              .title {
-                fill: black;
-                font-size: ${fontSize}px;
-                font-family: sans-serif;
-                font-weight: bold;
-                stroke: white;
-                stroke-width: ${Math.max(2, fontSize * 0.08)};
-                paint-order: stroke;
-              }
-            </style>
+  <svg width="${metadata.width}" height="${captionHeight}">
+    <style>
+      .title {
+        fill: black;
+        font-size: ${fontSize}px;
+        font-family: sans-serif;
+        font-weight: bold;
+        stroke: white;
+        stroke-width: ${Math.max(2, fontSize * 0.08)};
+        paint-order: stroke;
+      }
+    </style>
 
-            <text
-              x="50%"
-              y="50%"
-              dominant-baseline="middle"
-              text-anchor="middle"
-              class="title"
-            >
-              ${safeText}
-            </text>
-          </svg>
-        `;
+    <text
+      x="50%"
+      y="50%"
+      dominant-baseline="middle"
+      text-anchor="middle"
+      class="title"
+    >
+      ${safeText}
+    </text>
+  </svg>
+  `;
 
       const finalImage = await sharp({
         create: {
@@ -786,7 +785,7 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.editReply("❌ Ошибка при обработке изображения.");
     }
   }
-
+  
   // =========================
   // /calc
   // =========================
