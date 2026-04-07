@@ -1734,7 +1734,6 @@ client.once(Events.ClientReady, async () => {
 
   // keep-alive сервер
   keepAlive();
-});
 
 
 client.login(TOKEN);
