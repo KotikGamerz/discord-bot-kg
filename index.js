@@ -267,201 +267,115 @@ function utcOffsetForSlot(slotGmt2) {
 // ===========================
 // 🎄 HNYC — ПОЛНЫЙ НОВОГОДНИЙ ЦИКЛ СЧЕТЧИКА
 // ===========================
-
 function startHnycLoop(client) {
 
   cron.schedule('* * * * *', async () => {
+    try {
 
-    const cfg = loadHnycConfig();
+      const cfg = loadHnycConfig();
 
-    // бот ещё не готов
-    if (!BOT_READY_AT) return;
+      if (!BOT_READY_AT) return;
 
-    // задержка после запуска
-    const secondsSinceReady = (Date.now() - BOT_READY_AT) / 1000;
-    if (secondsSinceReady < STARTUP_DELAY_SECONDS) return;
+      const seconds = (Date.now() - BOT_READY_AT) / 1000;
+      if (seconds < STARTUP_DELAY_SECONDS) return;
 
-    if (!cfg.enabled) return;
-    if (!cfg.channel_id) return;
+      if (!cfg.enabled || !cfg.channel_id) return;
 
-    const channel = client.channels.cache.get(cfg.channel_id);
-    if (!channel) return;
+      const channel = client.channels.cache.get(cfg.channel_id);
+      if (!channel) return;
 
-    const now = nowMsk();
-    const today = now.format("YYYY-MM-DD");
+      const now = nowMsk();
+      const today = now.format("YYYY-MM-DD");
 
+      // 🌅 счетчик дней
+      if (cfg.last_morning_date !== today) {
+        const target = dayjs.tz(`${now.year() + 1}-01-01 00:00`, MSK_TIMEZONE);
+        const days = target.startOf("day").diff(now.startOf("day"), "day");
 
-    // =========================
-    // 🌅 СЧЁТЧИК ДНЕЙ ДО НОВОГО ГОДА
-    // =========================
-
-    if (cfg.last_morning_date !== today) {
-
-      const target = dayjs.tz(
-        `${now.year() + 1}-01-01 00:00`,
-        MSK_TIMEZONE
-      );
-
-      const daysLeft = target.startOf("day").diff(now.startOf("day"), "day");
-
-      if (daysLeft > 0) {
-        await channel.send(
-          `🎄Новый год через **${daysLeft} дней**!\n@here`
-        );
-      }
-
-      cfg.last_morning_date = today;
-      saveHnycConfig(cfg);
-    }
-
-
-    // =========================
-    // ☀️ УТРЕННИЙ НОВОГОДНИЙ СОВЕТ (25.12 – 01.01)
-    // =========================
-
-    const month = now.month() + 1;
-    const day = now.date();
-
-    const inMorningPeriod =
-      (month === 12 && day >= 25) ||
-      (month === 1 && day === 1);
-
-    const afterMorningTime =
-      now.hour() > 10 ||
-      (now.hour() === 10 && now.minute() >= 30);
-
-    if (inMorningPeriod && afterMorningTime) {
-
-      if (cfg.last_morning_tip_date !== today) {
-
-        const tip = HNYC_MORNING_TIPS[
-          Math.floor(Math.random() * HNYC_MORNING_TIPS.length)
-        ];
-
-        await channel.send(
-          `@here\n☀️ **Доброе утро**\n${tip}`
-        );
-
-        cfg.last_morning_tip_date = today;
-        saveHnycConfig(cfg);
-      }
-    }
-
-
-    // =========================
-    // 🌙 ВЕЧЕРНИЙ НОВОГОДНИЙ СОВЕТ — ПОСЛЕ 19:30
-    // =========================
-
-    const afterEveningTime =
-      now.hour() > 19 ||
-      (now.hour() === 19 && now.minute() >= 30);
-
-    if (afterEveningTime) {
-
-      if (cfg.last_evening_date !== today) {
-
-        let idx = Math.floor(Math.random() * HNYC_TIPS.length);
-        const lastIdx = cfg.last_tip_index;
-
-        if (lastIdx !== null && HNYC_TIPS.length > 1) {
-          while (idx === lastIdx) {
-            idx = Math.floor(Math.random() * HNYC_TIPS.length);
-          }
+        if (days > 0) {
+          await channel.send(`🎄 Новый год через ${days} дней!\n@here`);
         }
 
-        const tip = HNYC_TIPS[idx];
+        cfg.last_morning_date = today;
+        saveHnycConfig(cfg);
+      }
 
-        await channel.send(
-          `✨ @here Тёплый совет вечера:\n${tip}`
-        );
+      // 🌙 вечерний совет
+      const afterEvening = now.hour() > 19 || (now.hour() === 19 && now.minute() >= 30);
+
+      if (afterEvening && cfg.last_evening_date !== today) {
+        const idx = Math.floor(Math.random() * HNYC_TIPS.length);
+        await channel.send(`✨ @here\n${HNYC_TIPS[idx]}`);
 
         cfg.last_evening_date = today;
         cfg.last_tip_index = idx;
         saveHnycConfig(cfg);
       }
+
+    } catch (err) {
+      logError("HNYC CRON ERROR: " + err);
     }
-
-
-    // =========================
-    // 🎄 31 ДЕКАБРЯ — ПОСЛЕ 13:00
-    // =========================
-
-    const isDec31 = (month === 12 && day === 31);
-
-    const after31Time =
-      now.hour() > 13 ||
-      (now.hour() === 13 && now.minute() >= 0);
-
-    if (isDec31 && after31Time && !cfg.special_31_sent) {
-
-      await channel.send(
-        "🎄 Новый год уже близко! Обязательно помогите родителям накрывать на стол 🍽️\n@here"
-      );
-
-      cfg.special_31_sent = true;
-      saveHnycConfig(cfg);
-    }
-
   });
 }
 
 // =======================================
 // 🎆 HNYC2 — ЦИКЛ СТРАН НА НОВЫЙ ГОД
 // =======================================
-
 function startHnyc2Loop(client) {
 
   cron.schedule('* * * * *', async () => {
-    const cfg = loadHnyc2Config();
+    try {
 
-    if (!cfg.enabled || cfg.finished) return;
+      const cfg = loadHnyc2Config();
+      if (!cfg.enabled || cfg.finished) return;
 
-    const channel = client.channels.cache.get(cfg.channel_id);
-    if (!channel) return;
+      const channel = client.channels.cache.get(cfg.channel_id);
+      if (!channel) return;
 
-    const now = nowGmt2();
+      const now = nowGmt2();
 
-    const year = now.month() === 11 ? now.year() : now.year() - 1;
-    const start = dayjs(`${year}-12-31 12:00`).utcOffset(120); // GMT+2
-    const end   = dayjs(`${year+1}-01-01 12:00`).utcOffset(120); // GMT+2
+      const year = now.month() === 11 ? now.year() : now.year() - 1;
+      const start = dayjs(`${year}-12-31 12:00`).utcOffset(120);
+      const end   = dayjs(`${year+1}-01-01 12:00`).utcOffset(120);
 
-    if (now.isBefore(start) || now.isAfter(end.add(5, 'minute'))) return;
+      if (now.isBefore(start) || now.isAfter(end.add(5, 'minute'))) return;
 
-    const currentHour = now.hour();
-    if (cfg.last_sent_hour === currentHour) return;
+      const currentHour = now.hour();
+      if (cfg.last_sent_hour === currentHour) return;
 
-    const slot = now.minute(0).second(0);
-    const ts = Math.floor(slot.valueOf() / 1000);
+      const slot = now.minute(0).second(0);
+      const ts = Math.floor(slot.valueOf() / 1000);
 
-    const utcOff = utcOffsetForSlot(slot);
-    let countries = HNYC2_BY_UTC_OFFSET[utcOff];
-    if (!countries) countries = `часовая зона UTC${utcOff >= 0 ? '+' : ''}${utcOff}`;
+      const utcOff = utcOffsetForSlot(slot);
+      let countries = HNYC2_BY_UTC_OFFSET[utcOff];
+      if (!countries) countries = `UTC${utcOff >= 0 ? '+' : ''}${utcOff}`;
 
-    // 🎆 финал
-    if (now.isAfter(end)) {
+      if (now.isAfter(end)) {
+        const msg =
+          `🕛🎆 <t:${ts}:t> — @here\n` +
+          `Последними: 🇵🇫 Французская Полинезия, 🇺🇸 Гавайи\n\n` +
+          `🌍 Новый год везде! 🎄`;
+
+        await safeSend(channel, msg);
+
+        cfg.finished = true;
+        cfg.enabled = false;
+        cfg.last_sent_hour = currentHour;
+        saveHnyc2Config(cfg);
+        return;
+      }
+
       const msg =
-        `🕛🎆 <t:${ts}:t> — @here\n` +
-        `**Последними Новый год встретили:** 🇵🇫 Французская Полинезия, 🇺🇸 Гавайи\n\n` +
-        `🌍 **Теперь Новый год наступил во всех часовых зонах мира.**\n` +
-        `Спасибо, что были вместе 🎄✨`;
+        `🕛🎄 <t:${ts}:t> — @here\n` +
+        `Новый год сейчас: ${countries}`;
 
-      await safeSend(channel, msg);
-      cfg.finished = true;
-      cfg.enabled = false;
-      cfg.last_sent_hour = currentHour;
-      saveHnyc2Config(cfg);
-      return;
-    }
+      if (await safeSend(channel, msg)) {
+        cfg.last_sent_hour = currentHour;
+        saveHnyc2Config(cfg);
+      }
 
-    // обычное сообщение
-    const msg =
-      `🕛🎄 <t:${ts}:t> — @here\n` +
-      `**В этих странах наступил Новый год прямо сейчас:** ${countries}`;
-
-    const ok = await safeSend(channel, msg);
-    if (ok) {
-      cfg.last_sent_hour = currentHour;
-      saveHnyc2Config(cfg);
+    } catch (err) {
+      logError("HNYC2 CRON ERROR: " + err);
     }
   });
 }
