@@ -1765,17 +1765,28 @@ client.on('interactionCreate', async (interaction) => {
 // =======================================
 // 🔔 СОБЫТИЕ clientReady (аналог on_ready)
 // =======================================
-
 client.once(Events.ClientReady, async () => {
 
   BOT_READY_AT = Date.now();
-
   console.log(`✅ Бот онлайн как ${client.user.tag}`);
-  console.log(`⏳ Ждём ${STARTUP_DELAY_SECONDS} секунд перед запуском фоновых задач...`);
 
-  // задержка старта (аналог await asyncio.sleep)
-  await new Promise(resolve => setTimeout(resolve, STARTUP_DELAY_SECONDS * 1000));
+  // 🔥 мониторинг
+  setInterval(() => {
+    const m = process.memoryUsage();
+    logInfo(
+      `RAM ${(m.rss/1024/1024).toFixed(0)}MB | ` +
+      `Heap ${(m.heapUsed/1024/1024).toFixed(0)}MB | ` +
+      `Ping ${client.ws.ping}ms`
+    );
+  }, 60000);
 
+  // ⏳ задержка
+  await new Promise(r => setTimeout(r, STARTUP_DELAY_SECONDS * 1000));
+
+  // 🚀 запуск
+  startHnycLoop(client);
+  startHnyc2Loop(client);
+});
 
   // =========================
   // 🎄 COUNTDOWN (HNYC)
