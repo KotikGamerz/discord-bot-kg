@@ -6,6 +6,30 @@ process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
 });
 
+client.on('debug', (info) => {
+  logInfo(`[WS DEBUG] ${info}`);
+});
+
+client.on('warn', (info) => {
+  logWarn(`[WS WARN] ${info}`);
+});
+
+client.on('error', (err) => {
+  logError(`[CLIENT ERROR] ${err}`);
+});
+
+client.on('shardDisconnect', (event, id) => {
+  logWarn(`Shard ${id} disconnected: ${event?.code}`);
+});
+
+client.on('shardReconnecting', (id) => {
+  logWarn(`Shard ${id} reconnecting...`);
+});
+
+client.on('shardResume', (id, replayed) => {
+  logInfo(`Shard ${id} resumed (${replayed} events)`);
+});
+
 const log = (type, msg) => {
   const time = new Date().toLocaleString();
   console.log(`[${time}] [${type}] ${msg}`);
