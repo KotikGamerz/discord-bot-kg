@@ -294,11 +294,6 @@ client.on('shardResume', (id, replayed) => {
   logInfo(`Shard ${id} resumed (${replayed} events)`);
 });
 
-const log = (type, msg) => {
-  const time = new Date().toLocaleString();
-  console.log(`[${time}] [${type}] ${msg}`);
-};
-
 // =======================================
 // 🧩 РЕГИСТРАЦИЯ SLASH-КОМАНД
 // =======================================
