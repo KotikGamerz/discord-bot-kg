@@ -2,6 +2,11 @@ const dns = require('dns');
 
 dns.setDefaultResultOrder('ipv4first');
 
+const log = (type, msg) => {
+  const time = new Date().toLocaleString();
+  console.log(`[${time}] [${type}] ${msg}`);
+};
+
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION:", err);
 });
@@ -21,7 +26,6 @@ const path = require("path");
 const https = require("https");
 const express = require("express");
 const axios = require("axios");
-const cron = require("node-cron");
 const sharp = require("sharp");
 
 const { Client, GatewayIntentBits, Partials, Events } = require("discord.js");
@@ -40,50 +44,9 @@ const NIGHT_HEADERS = {
 };
 
 const OWNER_ID = "1167514315864162395";
-const HNYC2_CONFIG_PATH = "hnyc2_config.json";
-const STICK_CONFIG_PATH = "stick_config.json";
-const HNYC_CONFIG_PATH = "hnyc_config.json";
 
 let BOT_READY_AT = null;
 const STARTUP_DELAY_SECONDS = 30;
-
-// ==========================
-// 🎄 ВЕЧЕРНИЕ НОВОГОДНИЕ СОВЕТЫ (заморожено до следующего НГ)
-// ==========================
-
-const HNYC_TIPS = [
-  "🎄 Самое время включить новогоднюю музыку и немного расслабиться",
-  "✨ Вспомни самый приятный момент этого года",
-  "❄️ Даже если снега нет, зима уже чувствуется",
-  "🕯 Создай уют: свет, тишина и покой",
-  "🎁 Пора подумать, кого и чем ты хочешь порадовать",
-  "📖 Отличный вечер, чтобы посмотреть любимый фильм",
-  "🌟 Иногда достаточно просто остановиться и выдохнуть",
-  "🎄 Новый год ближе, чем кажется",
-  "🍪 Может, пора чем-нибудь вкусным себя побаловать?",
-  "❄️ Маленькие радости — самые важные",
-  "✨ Тёплый вечер — хороший повод побыть с близкими",
-  "🎶 Включи музыку, которая поднимает настроение",
-  "☕ Уют начинается с простых вещей",
-  "🕯 Пусть этот вечер будет спокойным",
-  "🎄 Уже совсем скоро всё изменится",
-  "❄️ Зима — время тишины и мыслей",
-  "✨ Пусть этот вечер будет добрым",
-  "🎁 Даже ожидание праздника — уже праздник"
-];
-
-// ==========================
-// ☀️ УТРЕННИЕ НОВОГОДНИЕ СОВЕТЫ (25.12 – 01.01) (заморожено)
-// ==========================
-
-const HNYC_MORNING_TIPS = [
-  "❄️ Открой окно на минутку, вдохни свежий воздух и выбери одну маленькую цель на сегодня — остальное подтянется само. ✨",
-  "☕ Собери уют: плед, тёплый напиток и спокойный темп — декабрь идеально подходит для такого старта. 🎄",
-  "✨ Сделай мини-порядок на столе (буквально 30 секунд) — и в голове станет заметно свободнее.",
-  "🌤️ Пара лёгких движений или короткая прогулка по комнате — тело проснётся, а настроение подтянется следом.",
-  "🍪 Сегодня не нужно спешить: выбери любимый завтрак или перекус и устрой себе маленький утренний праздник. 🎁",
-  "💛 Если захочется — напиши кому-нибудь «хорошего дня» или просто подумай о нём тепло. Это действительно работает."
-];
 
 // =======================================
 // SAFE-SEND
@@ -100,260 +63,9 @@ async function safeSend(channel, text) {
 }
 
 // =======================================
-// 📁 HNYC — РАБОТА С КОНФИГОМ
-// =======================================
-
-function loadHnycConfig() {
-  try {
-    if (!fs.existsSync(HNYC_CONFIG_PATH)) throw new Error("Config not found");
-
-    const data = fs.readFileSync(HNYC_CONFIG_PATH, "utf-8");
-    return JSON.parse(data);
-
-  } catch (error) {
-    // дефолтный конфиг, если файла нет или битый
-    return {
-      enabled: false,              // включён ли countdown
-      channel_id: null,            // канал для сообщений
-      last_morning_date: null,     // дата последнего счётчика дней
-      last_morning_tip_date: null, // дата последнего утреннего совета
-      last_evening_date: null,     // дата последнего вечернего совета
-      last_tip_index: null,        // индекс последнего совета
-      special_31_sent: false,      // отправлено ли событие 31 декабря
-      last_action_ts: null         // контроллер действий
-    };
-  }
-}
-
-function saveHnycConfig(cfg) {
-  fs.writeFileSync(
-    HNYC_CONFIG_PATH,
-    JSON.stringify(cfg, null, 4),
-    "utf-8"
-  );
-}
-
-// 📁 HNYC конфиг — гарантируем наличие файла (создастся при первом запуске)
-saveHnycConfig(loadHnycConfig());
-
-// =======================================
-// 📁 HNYC2 — РАБОТА С КОНФИГОМ (страны)
-// =======================================
-
-function loadHnyc2Config() {
-  try {
-    if (!fs.existsSync(HNYC2_CONFIG_PATH)) throw new Error('Config not found');
-    const data = fs.readFileSync(HNYC2_CONFIG_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    return {
-      enabled: false,
-      channel_id: null,
-      last_sent_hour: null,
-      finished: false
-    };
-  }
-}
-
-function saveHnyc2Config(cfg) {
-  fs.writeFileSync(
-    HNYC2_CONFIG_PATH,
-    JSON.stringify(cfg, null, 4),
-    'utf-8'
-  );
-}
-
-// 📁 HNYC2 конфиг — гарантируем наличие файла
-saveHnyc2Config(loadHnyc2Config());
-
-// =======================================
 // СОЗДАНИЕ CLIENT (объявляем заранее, создадим ниже)
 // =======================================
 let client;
-
-// =======================================
-// ⏰ HNYC — ВРЕМЯ (GMT+3 / МОСКВА)
-// =======================================
-
-const MSK_TIMEZONE = "Europe/Moscow";
-
-function nowMsk() {
-  // возвращает объект dayjs с временем Москвы
-  return dayjs().tz(MSK_TIMEZONE);
-}
-
-// =======================================
-// ⏰ HNYC2 — ВРЕМЯ (Europe/Chisinau)
-// =======================================
-
-const EET_TIMEZONE = "Europe/Chisinau";
-// HNYC2_CONFIG_PATH уже объявлен выше
-
-function nowEet() {
-  // текущее время по Кишинёву
-  return dayjs().tz(EET_TIMEZONE);
-}
-
-// =======================================
-// 🎆 HNYC2 — СТРАНЫ И GMT+2
-// =======================================
-
-// фиксированная зона GMT+2 (без сезонных скачков)
-function nowGmt2() {
-  return dayjs().utcOffset(120); // 120 минут = GMT+2
-}
-
-// словарь UTC → страны
-const HNYC2_BY_UTC_OFFSET = {
-  14: "🇰🇮 Кирибати (Острова Лайн, UTC+14)",
-  13: "🇳🇿 Новая Зеландия (летнее время, UTC+13), 🇹🇴 Тонга, 🇼🇸 Самоа (часть)",
-  12: "🇫🇯 Фиджи, 🇹🇻 Тувалу, 🇲🇭 Маршалловы Острова (UTC+12)",
-  11: "🇸🇧 Соломоновы Острова, 🇻🇺 Вануату, 🇳🇨 Новая Каледония (UTC+11)",
-  10: "🇦🇺 Австралия (восток), 🇵🇬 Папуа–Новая Гвинея (UTC+10)",
-  9:  "🇯🇵 Япония, 🇰🇷 Южная Корея (UTC+9)",
-  8:  "🇨🇳 Китай, 🇵🇭 Филиппины, 🇸🇬 Сингапур, 🇲🇾 Малайзия, 🇭🇰 Гонконг (UTC+8)",
-  7:  "🇹🇭 Таиланд, 🇻🇳 Вьетнам, 🇰🇭 Камбоджа, 🇱🇦 Лаос (UTC+7)",
-  6:  "🇧🇩 Бангладеш, 🇧🇹 Бутан (UTC+6)",
-  5:  "🇵🇰 Пакистан (UTC+5) ⚠️ Индия — UTC+5:30",
-  4:  "🇦🇪 ОАЭ, 🇴🇲 Оман (UTC+4)",
-  3:  "🇷🇺 Россия (Москва), 🇧🇾 Беларусь, 🇹🇷 Турция (UTC+3)",
-  2:  "🇲🇩 Молдова, 🇷🇴 Румыния, 🇺🇦 Украина, 🇬🇷 Греция (UTC+2)",
-  1:  "🇩🇪 Германия, 🇫🇷 Франция, 🇪🇸 Испания, 🇮🇹 Италия (UTC+1)",
-  0:  "🇬🇧 Великобритания, 🇵🇹 Португалия (UTC+0)",
- "-1":  "🇨🇻 Кабо-Верде (UTC-1)",
- "-2":  "🇧🇷 Бразилия (часть, UTC-2)",
- "-3":  "🇧🇷 Бразилия (восток), 🇦🇷 Аргентина, 🇺🇾 Уругвай (UTC-3)",
- "-4":  "🇨🇱 Чили, 🇧🇴 Боливия (UTC-4)",
- "-5":  "🇺🇸 США (восток), 🇨🇦 Канада (UTC-5)",
- "-6":  "🇺🇸 США (центр), 🇨🇦 Канада (UTC-6)",
- "-7":  "🇺🇸 США (гора), 🇨🇦 Канада (UTC-7)",
- "-8":  "🇺🇸 США (тихоокеанское), 🇨🇦 Канада (UTC-8)",
- "-9":  "🇺🇸 Аляска (UTC-9)",
- "-10": "🇵🇫 Французская Полинезия, 🇺🇸 Гавайи (UTC-10)",
- "-11": "🇦🇸 Американское Самоа (UTC-11)"
-};
-
-function utcOffsetForSlot(slotGmt2) {
-  let off = (2 - slotGmt2.hour()) % 24;
-  if (off > 14) off -= 24;
-  return off;
-}
-
-// ===========================
-// 🎄 HNYC — ПОЛНЫЙ НОВОГОДНИЙ ЦИКЛ СЧЕТЧИКА
-// ===========================
-function startHnycLoop(client) {
-
-  cron.schedule('* * * * *', async () => {
-    try {
-
-      const cfg = loadHnycConfig();
-
-      if (!BOT_READY_AT) return;
-
-      const seconds = (Date.now() - BOT_READY_AT) / 1000;
-      if (seconds < STARTUP_DELAY_SECONDS) return;
-
-      if (!cfg.enabled || !cfg.channel_id) return;
-
-      const channel = client.channels.cache.get(cfg.channel_id);
-      if (!channel) return;
-
-      const now = nowMsk();
-      const today = now.format("YYYY-MM-DD");
-
-      // 🌅 счетчик дней
-      if (cfg.last_morning_date !== today) {
-        const target = dayjs.tz(`${now.year() + 1}-01-01 00:00`, MSK_TIMEZONE);
-        const days = target.startOf("day").diff(now.startOf("day"), "day");
-
-        if (days > 0) {
-          await channel.send(`🎄 Новый год через ${days} дней!\n@here`);
-        }
-
-        cfg.last_morning_date = today;
-        saveHnycConfig(cfg);
-      }
-
-      // 🌙 вечерний совет
-      const afterEvening = now.hour() > 19 || (now.hour() === 19 && now.minute() >= 30);
-
-      if (afterEvening && cfg.last_evening_date !== today) {
-        const idx = Math.floor(Math.random() * HNYC_TIPS.length);
-        await channel.send(`✨ @here\n${HNYC_TIPS[idx]}`);
-
-        cfg.last_evening_date = today;
-        cfg.last_tip_index = idx;
-        saveHnycConfig(cfg);
-      }
-
-    } catch (err) {
-      logError("HNYC CRON ERROR: " + err);
-    }
-  });
-}
-
-// =======================================
-// 🎆 HNYC2 — ЦИКЛ СТРАН НА НОВЫЙ ГОД
-// =======================================
-function startHnyc2Loop(client) {
-
-  cron.schedule('* * * * *', async () => {
-    try {
-
-      const cfg = loadHnyc2Config();
-      if (!cfg.enabled || cfg.finished) return;
-
-      const channel = client.channels.cache.get(cfg.channel_id);
-      if (!channel) return;
-
-      const now = nowGmt2();
-
-      const year = now.month() === 11 ? now.year() : now.year() - 1;
-      const start = dayjs(`${year}-12-31 12:00`).utcOffset(120);
-      const end   = dayjs(`${year+1}-01-01 12:00`).utcOffset(120);
-
-      if (now.isBefore(start) || now.isAfter(end.add(5, 'minute'))) return;
-
-      const currentHour = now.hour();
-      if (cfg.last_sent_hour === currentHour) return;
-
-      const slot = now.minute(0).second(0);
-      const ts = Math.floor(slot.valueOf() / 1000);
-
-      const utcOff = utcOffsetForSlot(slot);
-      let countries = HNYC2_BY_UTC_OFFSET[utcOff];
-      if (!countries) countries = `UTC${utcOff >= 0 ? '+' : ''}${utcOff}`;
-
-      if (now.isAfter(end)) {
-        const msg =
-          `🕛🎆 <t:${ts}:t> — @here\n` +
-          `Последними: 🇵🇫 Французская Полинезия, 🇺🇸 Гавайи\n\n` +
-          `🌍 Новый год везде! 🎄`;
-
-        await safeSend(channel, msg);
-
-        cfg.finished = true;
-        cfg.enabled = false;
-        cfg.last_sent_hour = currentHour;
-        saveHnyc2Config(cfg);
-        return;
-      }
-
-      const msg =
-        `🕛🎄 <t:${ts}:t> — @here\n` +
-        `Новый год сейчас: ${countries}`;
-
-      if (await safeSend(channel, msg)) {
-        cfg.last_sent_hour = currentHour;
-        saveHnyc2Config(cfg);
-      }
-
-    } catch (err) {
-      logError("HNYC2 CRON ERROR: " + err);
-    }
-  });
-}
 
 // =======================================
 // 🌐 KEEP-ALIVE WEB SERVER (для Render / UptimeRobot)
@@ -1549,62 +1261,6 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // =========================
-  // HNYC управление
-  // =========================
-
-  if (commandName === "hnyc_start") {
-    if (interaction.user.id !== OWNER_ID)
-      return interaction.reply({ content:"❌ Нет доступа.", ephemeral:true });
-
-    const cfg = loadHnycConfig();
-    cfg.enabled = true;
-    cfg.channel_id = interaction.channel.id;
-    cfg.last_morning_date = null;
-    cfg.last_evening_date = null;
-    saveHnycConfig(cfg);
-
-    return interaction.reply({ content:"✅ Countdown включён.", ephemeral:true });
-  }
-
-  if (commandName === "hnyc_stop") {
-    if (interaction.user.id !== OWNER_ID)
-      return interaction.reply({ content:"❌ Нет доступа.", ephemeral:true });
-
-    const cfg = loadHnycConfig();
-    cfg.enabled = false;
-    saveHnycConfig(cfg);
-
-    return interaction.reply({ content:"🛑 Countdown выключен.", ephemeral:true });
-  }
-
-
-  if (commandName === "hnyc2_start") {
-    if (interaction.user.id !== OWNER_ID)
-      return interaction.reply({ content:"❌ Нет доступа.", ephemeral:true });
-
-    const cfg = loadHnyc2Config();
-    cfg.enabled = true;
-    cfg.finished = false;
-    cfg.channel_id = interaction.channel.id;
-    cfg.last_sent_hour = null;
-    saveHnyc2Config(cfg);
-
-    return interaction.reply({ content:"🎆 HNYC2 запущен.", ephemeral:true });
-  }
-
-  if (commandName === "hnyc2_stop") {
-    if (interaction.user.id !== OWNER_ID)
-      return interaction.reply({ content:"❌ Нет доступа.", ephemeral:true });
-
-    const cfg = loadHnyc2Config();
-    cfg.enabled = false;
-    saveHnyc2Config(cfg);
-
-    return interaction.reply({ content:"🛑 HNYC2 остановлен.", ephemeral:true });
-  }
-
-
-  // =========================
   // /croles → подтверждение
   // =========================
 
@@ -1704,41 +1360,12 @@ client.once(Events.ClientReady, async () => {
 
   // ⏳ задержка
   await new Promise(r => setTimeout(r, STARTUP_DELAY_SECONDS * 1000));
-
-  // 🚀 запуск
-  startHnycLoop(client);
-  startHnyc2Loop(client);
 });
 
-  // =========================
-  // 🎄 COUNTDOWN (HNYC)
-  // =========================
-
-  const cfg = loadHnycConfig();
-
-  if (cfg.enabled && !cfg.finished) {
-    console.log("🎄 HNYC (countdown) запущен");
-    startHnycLoop(client);
-  } else {
-    console.log("🧊 HNYC (countdown) заморожен");
-  }
-
 
   // =========================
-  // 🌍 СТРАНЫ (HNYC2)
+  // 🌍 ОКОНЧАНИЕ ЗАПУСКА
   // =========================
-
-  const cfg2 = loadHnyc2Config();
-
-  if (cfg2.enabled && !cfg2.finished) {
-    console.log("🌍 HNYC2 (страны) запущен");
-    startHnyc2Loop(client);
-  } else {
-    console.log("🧊 HNYC2 (страны) заморожен");
-  }
-
-
-  console.log("🚀 Проверка фоновых задач завершена");
 
   // keep-alive сервер
   keepAlive();
