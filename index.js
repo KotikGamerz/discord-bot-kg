@@ -1,3 +1,7 @@
+const dns = require('dns');
+
+dns.setDefaultResultOrder('ipv4first');
+
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION:", err);
 });
@@ -1740,4 +1744,27 @@ client.once(Events.ClientReady, async () => {
   keepAlive();
 
 
-client.login(TOKEN);
+let loginResolved = false;
+
+const loginPromise = client.login(TOKEN).then(() => {
+  loginResolved = true;
+});
+
+const timeout = new Promise((_, reject) =>
+  setTimeout(() => reject(new Error("Login timeout")), 20000)
+);
+
+Promise.race([loginPromise, timeout])
+  .then(() => logInfo("Login success"))
+  .catch(err => {
+    logError("Login failed: " + err.message);
+    process.exit(1);
+  });
+
+// 🔍 проверка ready
+setTimeout(() => {
+  if (!loginResolved || !client.isReady()) {
+    logError("❌ Не подключился к Discord — рестарт");
+    process.exit(1);
+  }
+}, 20000);
