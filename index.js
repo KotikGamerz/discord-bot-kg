@@ -471,6 +471,70 @@ client.on('interactionCreate', async (interaction) => {
     );
   }
 
+  // /short_rblx
+  if (interaction.commandName === "short_rblx") {
+
+      const url = interaction.options.getString("url");
+
+      // Проверка ссылки
+      if (
+          !url.startsWith("http://") &&
+          !url.startsWith("https://")
+      ) {
+          return interaction.reply({
+              content: "❌ Ссылка должна начинаться с http:// или https://",
+              ephemeral: true
+          });
+      }
+
+      try {
+
+          await interaction.deferReply();
+
+          const response = await axios.post(
+              "https://rblx.asia/api/shorten",
+              {
+                  url: url
+              },
+              {
+                  headers: {
+                      "Content-Type": "application/json"
+                  }
+              }
+          );
+ 
+          const data = response.data;
+
+          // Проверка ответа API
+          if (!data.code) {
+              return interaction.editReply(
+                  "❌ API не вернуло код сокращения."
+              );
+          }
+
+          const shortUrl = `https://rblx.asia/${data.code}`;
+
+          await interaction.editReply({
+              content:
+  `✅ Ссылка сокращена!
+
+  🔗 Оригинальная:
+  ${url}
+
+  ✨ Короткая:
+  ${shortUrl}`
+          });
+
+      } catch (error) {
+
+          console.error("Ошибка short_rblx:", error);
+
+          await interaction.editReply(
+              "❌ Не удалось сократить ссылку."
+          );
+      }
+  }
+
 
   // =========================
   // /devquote
