@@ -45,7 +45,7 @@ const commands = [
         .setName("пример")
         .setDescription("Например: 2+2")
         .setRequired(true)
-    )
+    ),
   
   // /caption
   new SlashCommandBuilder()
@@ -60,7 +60,7 @@ const commands = [
       o.setName('text')
         .setDescription('Подпись')
         .setRequired(true)
-    )
+    ),
 
   // /devquote
   new SlashCommandBuilder()
@@ -198,6 +198,16 @@ const commands = [
       o.setName('url')
        .setDescription('Ссылка для сокращения')
        .setRequired(true)
+    ),
+
+  // /short_rblx
+  new SlashCommandBuilder()
+    .setName('short_rblx')
+    .setDescription('Сократить длинную ссылку через rblx.asia')
+    .addStringOption(o =>
+      o.setName('url')
+        .setDescription('Ссылка для сокращения')
+        .setRequired(true)
     ),
 
   // /qr
