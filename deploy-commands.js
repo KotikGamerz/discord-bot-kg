@@ -9,7 +9,8 @@ const {
 require('dotenv').config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID; // ID приложения бота
+const CLIENT_ID = process.env.CLIENT_ID; 
+const dmCommands = ['togif', 'caption'];
 
 const commands = [
 
@@ -435,11 +436,17 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     console.log("⏳ Регистрирую slash-команды...");
 
     for (const command of commands) {
-      command.setContexts(
-        InteractionContextType.Guild,
-        InteractionContextType.BotDM,
-        InteractionContextType.PrivateChannel
-      );
+      if (dmCommands.includes(command.name)) {
+        command.setContexts(
+          InteractionContextType.Guild,
+          InteractionContextType.BotDM,
+          InteractionContextType.PrivateChannel
+        );
+      } else {
+        command.setContexts(
+          InteractionContextType.Guild
+        );
+      }
     }
 
     await rest.put(
