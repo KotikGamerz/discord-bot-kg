@@ -1,4 +1,11 @@
-const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const {
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  InteractionContextType
+} = require('discord.js');
+
 require('dotenv').config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -426,6 +433,14 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 (async () => {
   try {
     console.log("⏳ Регистрирую slash-команды...");
+
+    for (const command of commands) {
+      command.setContexts(
+        InteractionContextType.Guild,
+        InteractionContextType.BotDM,
+        InteractionContextType.PrivateChannel
+      );
+    }
 
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
